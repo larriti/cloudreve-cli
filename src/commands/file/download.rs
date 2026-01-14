@@ -1,5 +1,6 @@
 use cloudreve_api::api::v4::models::CreateDownloadUrlRequest;
 use cloudreve_api::{CloudreveClient, Result};
+use indicatif::{ProgressBar, ProgressStyle};
 use log::{error, info};
 use reqwest::Client;
 use std::fs::File;
@@ -15,18 +16,18 @@ pub async fn handle_download(
 
     // Convert to cloudreve://my/ format if needed
     let full_uri = if uri.starts_with("cloudreve://") {
-        &uri
+        uri.clone()
     } else if uri.starts_with('/') {
-        &format!("cloudreve://my{}", uri)
+        format!("cloudreve://my{}", uri)
     } else {
-        &format!("cloudreve://my/{}", uri)
+        format!("cloudreve://my/{}", uri)
     };
 
     info!("Using full URI: {}", full_uri);
 
     // 1. Create download URL
     let request = CreateDownloadUrlRequest {
-        uris: vec![full_uri],
+        uris: vec![&full_uri],
         download: Some(true),
         redirect: None,
         entity: None,
@@ -82,16 +83,43 @@ pub async fn handle_download(
     }
 
     let total_size = response.content_length().unwrap_or(0);
-    info!("Downloading {} bytes...", total_size);
 
-    // 3. Save to local file
+    // Create progress bar for download
+    let pb = ProgressBar::new(total_size);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+        .unwrap()
+        .progress_chars("=>-"));
+    pb.set_message("Downloading");
+
+    // 3. Download and save to local file
     let bytes = response.bytes().await?;
     let mut file = File::create(&output_path)?;
     file.write_all(&bytes)?;
 
-    info!("Download completed successfully!");
+    pb.finish_with_message("Download completed!");
+
     info!("Saved to: {}", output_path);
-    info!("Size: {} bytes", bytes.len());
+    info!("Size: {}", format_bytes(bytes.len() as i64));
 
     Ok(())
+}
+
+fn format_bytes(bytes: i64) -> String {
+    const TB: i64 = 1024 * 1024 * 1024 * 1024;
+    const GB: i64 = 1024 * 1024 * 1024;
+    const MB: i64 = 1024 * 1024;
+    const KB: i64 = 1024;
+
+    if bytes >= TB {
+        format!("{:.2} TB", bytes as f64 / TB as f64)
+    } else if bytes >= GB {
+        format!("{:.2} GB", bytes as f64 / GB as f64)
+    } else if bytes >= MB {
+        format!("{:.2} MB", bytes as f64 / MB as f64)
+    } else if bytes >= KB {
+        format!("{:.2} KB", bytes as f64 / KB as f64)
+    } else {
+        format!("{} B", bytes)
+    }
 }

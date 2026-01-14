@@ -15,10 +15,13 @@ path = "src/main.rs"
 cloudreve-api = "0.1"
 
 clap = { version = "4.0", features = ["derive", "cargo"] }
+clap_complete = "4.5"
 dirs = "6.0.0"
 env_logger = "0.11.8"
+indicatif = "0.18.3"
 rpassword = "7.0"
 log = "0.4"
+toml = "0.9.8"
 
 reqwest = { workspace = true }
 tokio = { workspace = true }

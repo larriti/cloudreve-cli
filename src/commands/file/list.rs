@@ -1,6 +1,7 @@
 use cloudreve_api::api::v4::models::{FileType, ListFilesRequest};
 use cloudreve_api::{CloudreveClient, Result};
 use log::{error, info};
+use crate::utils::format_bytes;
 
 pub async fn handle_list(
     client: &CloudreveClient,
@@ -50,7 +51,7 @@ pub async fn handle_list(
             for file in response.files {
                 match file.r#type {
                     FileType::Folder => info!("  📁 {}/", file.name),
-                    FileType::File =>   info!("  📄 {} ({} bytes)", file.name, file.size),
+                    FileType::File =>   info!("  📄 {} ({})", file.name, format_bytes(file.size)),
                 }
             }
 

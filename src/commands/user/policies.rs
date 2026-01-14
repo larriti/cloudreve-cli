@@ -12,19 +12,19 @@ pub async fn handle_policies(client: &CloudreveClient) -> Result<()> {
             }
 
             info!("Available storage policies:");
-            println!();
+            info!("");
             for (index, policy) in policies.iter().enumerate() {
-                println!("  [{}] {} (ID: {})", index, policy.name, policy.id);
-                println!("      Type: {}", policy.type_);
-                println!("      Max Size: {} MB", policy.max_size);
+                info!("  [{}] {} (ID: {})", index, policy.name, policy.id);
+                info!("      Type: {}", policy.type_);
+                info!("      Max Size: {} MB", policy.max_size);
                 if let Some(relay) = policy.relay {
-                    println!("      Relay: {}", relay);
+                    info!("      Relay: {}", relay);
                 }
-                println!();
+                info!("");
             }
 
             info!("Use the policy ID with --policy parameter when uploading files:");
-            println!("  Example: cloudreve-cli file upload --file <file> --path <path> --policy {}", policies[0].id);
+            info!("  Example: cloudreve-cli file upload --file <file> --path <path> --policy {}", policies[0].id);
             Ok(())
         }
         Err(e) => {

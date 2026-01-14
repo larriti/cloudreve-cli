@@ -1,13 +1,37 @@
 use clap::{Parser, Subcommand};
 use cloudreve_api::{CloudreveClient, Result};
 use log::error;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 mod commands;
+mod config;
 mod context;
+mod utils;
+
+// Global flag to control log prefix display
+static LOG_PREFIX: AtomicBool = AtomicBool::new(false);
 
 // Local logging initialization (CLI-specific)
-fn init_logging_with_level(level: &str) {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(level)).init();
+fn init_logging_with_level(level: &str, show_prefix: bool) {
+    // Set global flag
+    LOG_PREFIX.store(show_prefix, Ordering::SeqCst);
+
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(level))
+        .format(|buf, record| {
+            use std::io::Write;
+            if LOG_PREFIX.load(Ordering::SeqCst) {
+                // Full format: timestamp + level + module path
+                writeln!(buf, "[{} {}{}] {}",
+                    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
+                    record.level(),
+                    record.module_path().map(|m| format!(" {}", m)).unwrap_or_default(),
+                    record.args())
+            } else {
+                // Clean format: message only
+                writeln!(buf, "{}", record.args())
+            }
+        })
+        .init();
 }
 
 #[derive(Parser)]
@@ -29,6 +53,10 @@ struct Cli {
     /// Log level (trace, debug, info, warn, error)
     #[clap(long, default_value = "info")]
     log_level: String,
+
+    /// Show full log prefix (timestamp, level, module path)
+    #[clap(long)]
+    log_prefix: bool,
 
     #[clap(subcommand)]
     command: Commands,
@@ -65,20 +93,41 @@ enum Commands {
     Settings {
         #[clap(subcommand)]
         command: commands::settings::SettingsCommands,
-    }
+    },
+
+    /// Generate shell completion script
+    Completions {
+        /// Shell type (bash, zsh, fish, elvish, powershell)
+        #[clap(long)]
+        shell: String,
+    },
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Load configuration file
+    let cfg = config::Config::load().unwrap_or_default();
+
+    // Parse command line arguments
     let cli = Cli::parse();
 
-    // Initialize logger with the specified log level
-    init_logging_with_level(&cli.log_level);
+    // Use config values as defaults if not provided via command line
+    let url = cli.url.or_else(|| cfg.default_url.clone());
+    let email = cli.email.or_else(|| cfg.default_email.clone());
+    let log_level = if cli.log_level == "info" {
+        // Use config log_level if default wasn't overridden
+        cfg.log_level.clone().unwrap_or_else(|| "info".to_string())
+    } else {
+        cli.log_level
+    };
+
+    // Initialize logger with the specified log level and prefix setting
+    init_logging_with_level(&log_level, cli.log_prefix);
 
     // Unified client initialization via context module
     let ctx = context::initialize_client(context::ClientConfig {
-        url: cli.url.clone(),
-        email: cli.email.clone(),
+        url: url.clone(),
+        email: email.clone(),
         token: cli.token.clone(),
     }).await?;
 
@@ -90,14 +139,14 @@ async fn main() -> Result<()> {
         Some(client) => client,
         None => {
             if is_auth_command {
-                let url = match cli.url.as_ref() {
+                let url_val = match url.as_ref() {
                     Some(u) => u,
                     None => {
-                        error!("URL is required for authentication. Please provide it with --url option.");
+                        error!("URL is required for authentication. Please provide it with --url option or set default_url in config file.");
                         std::process::exit(1);
                     }
                 };
-                CloudreveClient::new(url)
+                CloudreveClient::new(url_val)
             } else {
                 error!("No cached token found. Please authenticate first using the auth command.");
                 std::process::exit(1);
@@ -111,8 +160,8 @@ async fn main() -> Result<()> {
             commands::auth::handle_auth(
                 &mut client,
                 &ctx.token_manager,
-                cli.email,
-                cli.url,
+                email,
+                url,
                 password
             ).await?;
         }
@@ -128,7 +177,41 @@ async fn main() -> Result<()> {
         Commands::Settings { command } => {
             commands::settings::handle_settings_command(&client, command).await?;
         }
+        Commands::Completions { shell } => {
+            generate_completions(&shell);
+            return Ok(());
+        }
     }
 
     Ok(())
+}
+
+fn generate_completions(shell: &str) {
+    use clap::CommandFactory;
+    use std::io;
+
+    let mut app = Cli::command();
+
+    match shell {
+        "bash" => {
+            clap_complete::generate(clap_complete::shells::Bash, &mut app, "cloudreve-cli", &mut io::stdout());
+        }
+        "zsh" => {
+            clap_complete::generate(clap_complete::shells::Zsh, &mut app, "cloudreve-cli", &mut io::stdout());
+        }
+        "fish" => {
+            clap_complete::generate(clap_complete::shells::Fish, &mut app, "cloudreve-cli", &mut io::stdout());
+        }
+        "elvish" => {
+            clap_complete::generate(clap_complete::shells::Elvish, &mut app, "cloudreve-cli", &mut io::stdout());
+        }
+        "powershell" | "pwsh" => {
+            clap_complete::generate(clap_complete::shells::PowerShell, &mut app, "cloudreve-cli", &mut io::stdout());
+        }
+        _ => {
+            error!("Unsupported shell: {}", shell);
+            error!("Supported shells: bash, zsh, fish, elvish, powershell");
+            std::process::exit(1);
+        }
+    }
 }

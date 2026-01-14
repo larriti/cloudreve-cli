@@ -1,5 +1,6 @@
 use cloudreve_api::api::v4::models::{CreateUploadSessionRequest, ListFilesRequest};
 use cloudreve_api::{CloudreveClient, Result};
+use indicatif::{ProgressBar, ProgressStyle};
 use log::{debug, error, info, warn};
 use std::fs::File;
 use std::io::Read;
@@ -147,6 +148,14 @@ pub async fn handle_upload(
     let mut file_content = Vec::new();
     File::open(file_path)?.read_to_end(&mut file_content)?;
 
+    // Create progress bar
+    let pb = ProgressBar::new(total_chunks as u64);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} chunks ({eta})")
+        .unwrap()
+        .progress_chars("=>-"));
+    pb.set_message("Uploading");
+
     for (index, chunk) in file_content.chunks(chunk_size).enumerate() {
         // API requires chunk index to start from 0
         let chunk_index = index as u32;
@@ -166,11 +175,7 @@ pub async fn handle_upload(
                 .await
             {
                 Ok(_) => {
-                    info!(
-                        "Uploaded chunk {}/{}",
-                        chunk_index + 1,
-                        total_chunks
-                    );
+                    pb.inc(1);
                     break;
                 }
                 Err(e) => {
@@ -196,9 +201,7 @@ pub async fn handle_upload(
         }
     }
 
-    info!(
-        "Upload completed successfully! {} chunks uploaded.",
-        total_chunks
-    );
+    pb.finish_with_message("Upload completed!");
+    info!("{} chunks uploaded.", total_chunks);
     Ok(())
 }
