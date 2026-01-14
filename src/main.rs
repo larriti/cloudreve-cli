@@ -11,7 +11,7 @@ fn init_logging_with_level(level: &str) {
 }
 
 #[derive(Parser)]
-#[clap(name = "cloudreve-cli", version = "0.1.0", author = "Cloudreve CLI")]
+#[clap(name = "cloudreve-cli", version = env!("CARGO_PKG_VERSION"), author = "Cloudreve CLI")]
 /// A command-line interface for Cloudreve API
 struct Cli {
     /// Cloudreve instance URL
@@ -90,7 +90,13 @@ async fn main() -> Result<()> {
         Some(client) => client,
         None => {
             if is_auth_command {
-                let url = cli.url.as_ref().expect("URL is required for authentication");
+                let url = match cli.url.as_ref() {
+                    Some(u) => u,
+                    None => {
+                        error!("URL is required for authentication. Please provide it with --url option.");
+                        std::process::exit(1);
+                    }
+                };
                 CloudreveClient::new(url)
             } else {
                 error!("No cached token found. Please authenticate first using the auth command.");
