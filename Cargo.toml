@@ -1,0 +1,29 @@
+[package]
+name = "cloudreve-cli"
+version.workspace = true
+edition.workspace = true
+description = "Command-line interface for Cloudreve API"
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "cloudreve-cli"
+path = "src/main.rs"
+
+[dependencies]
+cloudreve-api = { path = "../cloudreve-api", version = "0.1.0" }
+
+clap = { version = "4.0", features = ["derive"] }
+dirs = "5.0"
+env_logger = "0.10"
+rpassword = "7.0"
+log = "0.4"
+
+reqwest = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+url = { workspace = true }
+chrono = { workspace = true }
