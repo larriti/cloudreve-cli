@@ -50,6 +50,10 @@ struct Cli {
     #[clap(short, long)]
     token: Option<String>,
 
+    /// API version (v3, v4, or auto for auto-detection)
+    #[clap(long, default_value = "auto")]
+    api_version: String,
+
     /// Log level (trace, debug, info, warn, error)
     #[clap(long, default_value = "info")]
     log_level: String,
@@ -101,6 +105,9 @@ enum Commands {
         #[clap(long)]
         shell: String,
     },
+
+    /// Show version information
+    Version,
 }
 
 #[tokio::main]
@@ -129,6 +136,7 @@ async fn main() -> Result<()> {
         url: url.clone(),
         email: email.clone(),
         token: cli.token.clone(),
+        api_version: None,  // For now, always use V4
     }).await?;
 
     // Determine if this is an auth command
@@ -179,6 +187,10 @@ async fn main() -> Result<()> {
         }
         Commands::Completions { shell } => {
             generate_completions(&shell);
+            return Ok(());
+        }
+        Commands::Version => {
+            commands::version::handle_version(&client).await;
             return Ok(());
         }
     }

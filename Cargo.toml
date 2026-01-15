@@ -12,7 +12,7 @@ name = "cloudreve-cli"
 path = "src/main.rs"
 
 [dependencies]
-cloudreve-api = "0.1"
+cloudreve-api = "0.2"
 
 clap = { version = "4.0", features = ["derive", "cargo"] }
 clap_complete = "4.5"

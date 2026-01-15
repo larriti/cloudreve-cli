@@ -7,6 +7,7 @@ pub struct ClientConfig {
     pub url: Option<String>,
     pub email: Option<String>,
     pub token: Option<String>,
+    pub api_version: Option<cloudreve_api::ApiVersion>,
 }
 
 /// Client initialization result
@@ -19,6 +20,10 @@ pub struct ClientContext {
 pub async fn initialize_client(config: ClientConfig) -> Result<ClientContext> {
     let token_manager = TokenManager::new()?;
     let token_provided = config.token.is_some();
+
+    // Note: Currently we always use V4 client (CloudreveClient) for main operations
+    // The api_version config is saved for future use when unified client is fully integrated
+    let _api_version = config.api_version;
 
     let client = if !token_provided {
         // Try to load from cache
@@ -92,7 +97,7 @@ fn load_cached_token(
     token_manager: &TokenManager,
     email: Option<&String>,
 ) -> Result<Option<TokenInfo>> {
-    
+
 
     match email {
         Some(email) => {
