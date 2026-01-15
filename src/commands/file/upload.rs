@@ -104,17 +104,16 @@ pub async fn handle_upload(
     // 2. Resolve storage policy with directory preference
     let policy_id = resolve_storage_policy(client, &path, policy_id).await?;
 
-    // 3. Build URI for upload
-    // API expects format: cloudreve://my/folder/file.txt
-    let uri = if path.starts_with('/') {
-        format!("cloudreve://my{}{}", path, file_name)
+    // 3. Build path for upload (API layer handles URI conversion)
+    let upload_path = if path.ends_with('/') || path.is_empty() {
+        format!("{}{}", path, file_name)
     } else {
-        format!("cloudreve://my/{}/{}", path.trim_end_matches('/'), file_name)
+        format!("{}/{}", path, file_name)
     };
 
     // 4. Create upload session
     let session_request = CreateUploadSessionRequest {
-        uri: &uri,
+        uri: &upload_path,
         size: file_size,
         policy_id: &policy_id,
         last_modified: None,
@@ -186,7 +185,7 @@ pub async fn handle_upload(
                             chunk_index + 1, e
                         );
                         // Clean up upload session
-                        let _ = client.delete_upload_session(&uri, &session.session_id).await;
+                        let _ = client.delete_upload_session(&upload_path, &session.session_id).await;
                         return Err(e);
                     }
                     warn!(

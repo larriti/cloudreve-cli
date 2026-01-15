@@ -14,20 +14,9 @@ pub async fn handle_download(
 ) -> Result<()> {
     info!("Downloading file with URI: {} to {}", uri, output);
 
-    // Convert to cloudreve://my/ format if needed
-    let full_uri = if uri.starts_with("cloudreve://") {
-        uri.clone()
-    } else if uri.starts_with('/') {
-        format!("cloudreve://my{}", uri)
-    } else {
-        format!("cloudreve://my/{}", uri)
-    };
-
-    info!("Using full URI: {}", full_uri);
-
-    // 1. Create download URL
+    // 1. Create download URL (API layer handles URI conversion)
     let request = CreateDownloadUrlRequest {
-        uris: vec![&full_uri],
+        uris: vec![&uri],
         download: Some(true),
         redirect: None,
         entity: None,

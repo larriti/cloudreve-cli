@@ -10,14 +10,6 @@ pub async fn handle_create(
     expire: Option<u32>,
     password: Option<String>,
 ) -> Result<()> {
-    // Format URI with cloudreve://my/ prefix for v4 API
-    let formatted_uri = if uri.starts_with("cloudreve://") {
-        uri
-    } else {
-        let path = uri.strip_prefix('/').unwrap_or(&uri);
-        format!("cloudreve://my/{}", path)
-    };
-
     // Validate password format if provided
     if let Some(ref pwd) = password {
         if !pwd.chars().all(|c| c.is_alphanumeric()) {
@@ -37,7 +29,7 @@ pub async fn handle_create(
     // is_private must be true when password is set
     let is_private = Some(password.is_some());
 
-    info!("Creating share link for: {}", formatted_uri);
+    info!("Creating share link for: {}", uri);
     if is_private.unwrap() {
         info!("Password protected share");
     }
@@ -54,7 +46,7 @@ pub async fn handle_create(
 
     let request = CreateShareLinkRequest {
         permissions: permission,
-        uri: formatted_uri,
+        uri: uri.clone(),
         is_private,
         share_view: Some(true),
         expire,

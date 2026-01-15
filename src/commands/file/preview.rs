@@ -10,18 +10,9 @@ pub async fn handle_preview(
 ) -> Result<()> {
     info!("Previewing: {} (type: {})", uri, preview_type);
 
-    // Convert to cloudreve://my/ format if needed
-    let full_uri = if uri.starts_with("cloudreve://") {
-        uri.clone()
-    } else if uri.starts_with('/') {
-        format!("cloudreve://my{}", uri)
-    } else {
-        format!("cloudreve://my/{}", uri)
-    };
-
-    // Create download URL
+    // Create download URL (API layer handles URI conversion)
     let request = CreateDownloadUrlRequest {
-        uris: vec![&full_uri],
+        uris: vec![&uri],
         download: Some(true),
         redirect: None,
         entity: None,
