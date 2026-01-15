@@ -99,6 +99,12 @@ enum Commands {
         command: commands::settings::SettingsCommands,
     },
 
+    /// WebDAV account management
+    Dav {
+        #[clap(subcommand)]
+        command: commands::dav::DavCommands,
+    },
+
     /// Generate shell completion script
     Completions {
         /// Shell type (bash, zsh, fish, elvish, powershell)
@@ -184,6 +190,9 @@ async fn main() -> Result<()> {
         }
         Commands::Settings { command } => {
             commands::settings::handle_settings_command(&client, command).await?;
+        }
+        Commands::Dav { command } => {
+            commands::dav::handle_dav_command(&client, command).await?;
         }
         Commands::Completions { shell } => {
             generate_completions(&shell);
