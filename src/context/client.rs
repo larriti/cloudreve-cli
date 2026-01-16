@@ -24,7 +24,11 @@ pub async fn initialize_client(config: ClientConfig) -> Result<ClientContext> {
         // Try to load from cache
         info!("Checking for cached token...");
 
-        let token_result = load_and_refresh_token(&token_manager, config.email.as_ref()).await?;
+        let token_result = load_and_refresh_token(
+            &token_manager,
+            config.url.as_ref().map(|s| s.as_str()),
+            config.email.as_ref().map(|s| s.as_str())
+        ).await?;
 
         match token_result {
             Some((token_info, api)) => {
@@ -55,30 +59,66 @@ pub async fn initialize_client(config: ClientConfig) -> Result<ClientContext> {
 /// Attempts to load and refresh a cached token if needed
 async fn load_and_refresh_token(
     token_manager: &TokenManager,
-    email: Option<&String>,
+    url: Option<&str>,
+    email: Option<&str>,
 ) -> Result<Option<(CliTokenInfo, CloudreveAPI)>> {
-    // Load token from cache
-    let token_info = match email {
-        Some(email) => {
+    // Load token from cache based on URL and/or email
+    let token_info = match (url, email) {
+        (Some(url), Some(email)) => {
+            // Both URL and email provided - find matching token
+            let result = token_manager.get_token_by_url_and_email(url, email)?;
+            if let Some(token) = result {
+                token
+            } else {
+                info!("No cached token found for URL: {} and email: {}", url, email);
+                return Ok(None);
+            }
+        }
+        (Some(url), None) => {
+            // Only URL provided - find token by URL
+            let result = token_manager.get_token_by_url(url)?;
+            if let Some(token) = result {
+                token
+            } else {
+                info!("No cached token found for URL: {}", url);
+                return Ok(None);
+            }
+        }
+        (None, Some(email)) => {
+            // Only email provided - find token by email
             let result = token_manager.get_token_by_email(email)?;
             if let Some(token) = result {
                 token
             } else {
+                info!("No cached token found for email: {}", email);
                 return Ok(None);
             }
         }
-        None => {
+        (None, None) => {
+            // Neither provided - use default token
             let result = token_manager.get_default_token()?;
             if let Some(token) = result {
                 token
             } else {
+                info!("No cached token found");
                 return Ok(None);
             }
         }
     };
 
     info!("Found cached token for user: {} (API version: {})", token_info.email, token_info.api_version);
-    let url = token_info.url.clone();
+    let cached_url = token_info.url.clone();
+
+    // When URL is provided, verify it matches the cached token's URL
+    if let Some(provided_url) = url {
+        let normalized_provided = provided_url.trim_end_matches('/');
+        let normalized_cached = cached_url.trim_end_matches('/');
+        if normalized_provided != normalized_cached {
+            info!("Provided URL ({}) differs from cached token URL ({}), ignoring cache",
+                provided_url, cached_url);
+            return Ok(None);
+        }
+    }
 
     // Parse the API version from cache
     let api_version = ApiVersion::from_str(&token_info.api_version)
@@ -86,9 +126,20 @@ async fn load_and_refresh_token(
 
     // Create API client with known version (no probing needed!)
     info!("Using cached API version: {:?} (skipping version detection)", api_version);
-    let mut api = CloudreveAPI::with_version(&url, api_version)?;
+    let mut api = CloudreveAPI::with_version(&cached_url, api_version)?;
 
-    // Check if access token is expired
+    // V3 tokens don't have expiration info - use directly and let API errors handle auth
+    if api_version == ApiVersion::V3 {
+        info!("V3 token detected - skipping expiration check");
+        // V3 uses session cookie, set it directly
+        let session_cookie = token_info.access_token.clone();
+        if let UnifiedClient::V3(client) = api.inner_mut() {
+            client.set_session_cookie(session_cookie);
+        }
+        return Ok(Some((token_info, api)));
+    }
+
+    // For V4, check if access token is expired
     if token_info.is_access_token_expired() {
         info!("Access token expired, attempting to refresh...");
 
@@ -114,17 +165,8 @@ async fn load_and_refresh_token(
         }
     } else {
         // Token is still valid, use it directly
-        // For V3, we need to handle session cookie differently
-        if api_version == ApiVersion::V3 {
-            // V3 uses session cookie, set it directly
-            let session_cookie = token_info.access_token.clone();
-            if let UnifiedClient::V3(client) = api.inner_mut() {
-                client.set_session_cookie(session_cookie);
-            }
-        } else {
-            // V4 uses JWT token
-            api.set_token(&token_info.access_token)?;
-        }
+        // V4 uses JWT token
+        api.set_token(&token_info.access_token)?;
         Ok(Some((token_info, api)))
     }
 }

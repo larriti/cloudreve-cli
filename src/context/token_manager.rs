@@ -32,12 +32,17 @@ fn default_api_version() -> String {
 }
 
 impl TokenInfo {
+    /// Checks if this is a V3 token (based on empty access_expires and api_version)
+    pub fn is_v3(&self) -> bool {
+        self.api_version == "v3" || self.api_version == "V3"
+    }
+
     /// Checks if the access token is expired based on access_expires timestamp
     pub fn is_access_token_expired(&self) -> bool {
-        // Parse the access_expires timestamp and compare with current time
-        // The timestamp is usually in RFC3339 format like "2023-01-01T12:00:00Z"
-        if self.access_expires.is_empty() {
-            return true; // No expiration time means expired
+        // V3 tokens (session cookies) don't have expiration info
+        // Return false to skip expiration check for V3
+        if self.is_v3() || self.access_expires.is_empty() {
+            return false; // No expiration time means assume valid for V3
         }
 
         // Parse the access_expires timestamp
@@ -112,12 +117,40 @@ impl TokenManager {
         Ok(token)
     }
 
+    /// Gets token for a specific URL
+    pub fn get_token_by_url(&self, url: &str) -> Result<Option<TokenInfo>, Error> {
+        let tokens = self.load_all_tokens()?;
+        // Normalize URL for comparison (trim trailing slashes)
+        let normalized_url = url.trim_end_matches('/');
+        let token = tokens.into_iter().find(|t| {
+            let token_url = t.url.trim_end_matches('/');
+            token_url == normalized_url
+        });
+        Ok(token)
+    }
+
+    /// Gets token for a specific URL and email combination
+    pub fn get_token_by_url_and_email(&self, url: &str, email: &str) -> Result<Option<TokenInfo>, Error> {
+        let tokens = self.load_all_tokens()?;
+        // Normalize URL for comparison (trim trailing slashes)
+        let normalized_url = url.trim_end_matches('/');
+        let token = tokens.into_iter().find(|t| {
+            let token_url = t.url.trim_end_matches('/');
+            token_url == normalized_url && t.email == email
+        });
+        Ok(token)
+    }
+
     /// Adds or updates a token in the collection
     pub fn save_token(&self, token_info: &TokenInfo) -> Result<(), Error> {
         let mut tokens = self.load_all_tokens()?;
 
-        // Check if token for this email already exists
-        let existing_index = tokens.iter().position(|t| t.email == token_info.email);
+        // Check if token for this URL and email already exists
+        let normalized_url = token_info.url.trim_end_matches('/');
+        let existing_index = tokens.iter().position(|t| {
+            let token_url = t.url.trim_end_matches('/');
+            token_url == normalized_url && t.email == token_info.email
+        });
 
         if let Some(index) = existing_index {
             // Update existing token
