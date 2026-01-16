@@ -1,9 +1,8 @@
-use cloudreve_api::api::v4::models::*;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::{error, info};
 
 pub async fn handle_share(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uri: String,
     _name: Option<String>, // Unused due to API structure
     expire: Option<u32>,
@@ -25,34 +24,12 @@ pub async fn handle_share(
         }
     }
 
-    // is_private must be true when password is set
-    let is_private = Some(password.is_some());
-
     info!("Creating share link for URI: {}", uri);
-    if is_private.unwrap() {
+    if password.is_some() {
         info!("Password protected share");
     }
 
-    // Build the request with required fields (API layer handles URI conversion)
-    let request = CreateShareLinkRequest {
-        uri: uri.clone(),
-        permissions: PermissionSetting {
-            user_explicit: serde_json::json!({}),
-            group_explicit: serde_json::json!({}),
-            same_group: "read".to_string(),
-            other: "none".to_string(),
-            anonymous: "none".to_string(),
-            everyone: "read".to_string(),
-        },
-        is_private,
-        share_view: Some(true),
-        expire,
-        price: Some(0),
-        password,
-        show_readme: Some(true),
-    };
-
-    match client.create_share_link(&request).await {
+    match api.create_share(&uri, _name.as_deref(), expire, password.as_deref()).await {
         Ok(share_url) => {
             info!("Share link created successfully!");
             info!("URL: {}", share_url);

@@ -1,16 +1,14 @@
-use cloudreve_api::api::v4::models::RenameFileRequest;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
 pub async fn handle_rename(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     src: String,
     name: String,
 ) -> Result<()> {
     info!("Renaming: {} -> {}", src, name);
 
-    let request = RenameFileRequest { name: &name };
-    client.rename_file(&src, &request).await?;
+    api.rename(&src, &name).await?;
 
     info!("Rename completed successfully");
     Ok(())

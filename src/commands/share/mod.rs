@@ -3,7 +3,7 @@ pub mod delete;
 pub mod list;
 pub mod update;
 
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
 
 #[derive(clap::Subcommand)]
 pub enum ShareCommands {
@@ -65,25 +65,29 @@ pub enum ShareCommands {
 }
 
 pub async fn handle_share_command(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     command: ShareCommands,
 ) -> Result<()> {
-    match command {
-        ShareCommands::List { page_size, order_by } => {
-            list::handle_list(client, page_size, order_by).await
-        }
-        ShareCommands::Create {
-            uri,
-            name,
-            expire,
-            password,
-        } => create::handle_create(client, uri, name, expire, password).await,
-        ShareCommands::Update {
-            id,
-            name,
-            expire,
-            password,
-        } => update::handle_update(client, id, name, expire, password).await,
-        ShareCommands::Delete { id } => delete::handle_delete(client, id).await,
+    // For now, use V4 client through inner()
+    match api.inner() {
+        UnifiedClient::V4(client) => match command {
+            ShareCommands::List { page_size, order_by } => {
+                list::handle_list(client, page_size, order_by).await
+            }
+            ShareCommands::Create {
+                uri,
+                name,
+                expire,
+                password,
+            } => create::handle_create(client, uri, name, expire, password).await,
+            ShareCommands::Update {
+                id,
+                name,
+                expire,
+                password,
+            } => update::handle_update(client, id, name, expire, password).await,
+            ShareCommands::Delete { id } => delete::handle_delete(client, id).await,
+        },
+        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Share commands not yet supported for V3 API".to_string())),
     }
 }

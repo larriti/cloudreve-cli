@@ -1,10 +1,10 @@
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
-pub async fn handle_mkdir(client: &CloudreveClient, path: String) -> Result<()> {
+pub async fn handle_mkdir(api: &CloudreveAPI, path: String) -> Result<()> {
     info!("Creating directory: {}", path);
 
-    client.create_directory(&path).await?;
+    api.create_directory(&path).await?;
 
     info!("Directory created successfully");
     Ok(())

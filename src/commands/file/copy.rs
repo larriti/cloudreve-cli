@@ -1,23 +1,35 @@
-use cloudreve_api::api::v4::models::MoveCopyFileRequest;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
+use log::error;
 
 pub async fn handle_copy(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     src: Vec<String>,
     dest: String,
 ) -> Result<()> {
     info!("Copying {} file(s) to {}", src.len(), dest);
 
-    let src_refs: Vec<&str> = src.iter().map(|s| s.as_str()).collect();
-    let request = MoveCopyFileRequest {
-        from: src_refs,
-        to: &dest,
-        copy: Some(true),
-    };
+    let mut succeeded = 0;
+    let mut failed = 0;
 
-    client.move_copy_files(&request).await?;
+    for src_path in &src {
+        match api.copy_file(src_path, &dest).await {
+            Ok(_) => {
+                info!("Copied: {}", src_path);
+                succeeded += 1;
+            }
+            Err(e) => {
+                error!("Failed to copy {}: {}", src_path, e);
+                failed += 1;
+            }
+        }
+    }
 
-    info!("Copy completed successfully");
+    info!("Copy complete: {} succeeded, {} failed", succeeded, failed);
+
+    if failed > 0 {
+        error!("Failed to copy {} out of {} files", failed, src.len());
+    }
+
     Ok(())
 }

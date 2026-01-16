@@ -1,9 +1,9 @@
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, DeleteTarget, Result};
 use log::{error, info};
 use std::io::{self, Write};
 
 pub async fn handle_delete(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uris: Vec<String>,
     force: bool,
 ) -> Result<()> {
@@ -30,7 +30,8 @@ pub async fn handle_delete(
     let mut failed = 0;
 
     for uri in &uris {
-        match client.delete_file(uri).await {
+        let target: DeleteTarget = uri.clone().into();
+        match api.delete(target).await {
             Ok(_) => {
                 info!("Deleted: {}", uri);
                 succeeded += 1;

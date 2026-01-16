@@ -3,7 +3,6 @@
 //! Handles authentication token storage, retrieval, and validation.
 //! Stores tokens in a single JSON file in ~/.cache/cloudreve-cli/tokens.json.
 
-use cloudreve_api::api::v4::models::LoginData;
 use cloudreve_api::error::Error;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -22,23 +21,17 @@ pub struct TokenInfo {
     pub refresh_expires: String,
     /// Cloudreve instance URL
     pub url: String,
+    /// API version (v3 or v4)
+    #[serde(default = "default_api_version")]
+    pub api_version: String,
+}
+
+/// Default API version when loading from old token files
+fn default_api_version() -> String {
+    "v4".to_string() // Default to v4 for backward compatibility
 }
 
 impl TokenInfo {
-    /// Creates a new TokenInfo from login data
-    pub fn from_login_data(login_data: &LoginData, url: String) -> Self {
-        Self {
-            user_id: login_data.user.id.clone(),
-            email: login_data.user.email.clone(),
-            nickname: login_data.user.nickname.clone(),
-            access_token: login_data.token.access_token.clone(),
-            refresh_token: login_data.token.refresh_token.clone(),
-            access_expires: login_data.token.access_expires.clone(),
-            refresh_expires: login_data.token.refresh_expires.clone(),
-            url,
-        }
-    }
-
     /// Checks if the access token is expired based on access_expires timestamp
     pub fn is_access_token_expired(&self) -> bool {
         // Parse the access_expires timestamp and compare with current time

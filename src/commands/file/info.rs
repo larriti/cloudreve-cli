@@ -1,39 +1,31 @@
-use cloudreve_api::api::v4::models::GetFileInfoRequest;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
-use serde_json::to_string_pretty;
 use crate::utils::format_bytes;
 
 pub async fn handle_info(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uri: String,
     extended: bool,
 ) -> Result<()> {
     info!("Getting file info for: {}", uri);
+    info!("API Version: {}", api.api_version());
 
-    let request = GetFileInfoRequest {
-        uri: &uri,
-        include_extended_info: Some(extended),
-    };
+    let file_info = api.get_file_info(&uri).await?;
 
-    let response = client.get_file_info_extended(&request).await?;
-
-    // Display the file information
-    info!("File Information:");
-    info!("  Type: {:?}", response.r#type);
-    info!("  ID: {}", response.id);
-    info!("  Name: {}", response.name);
-    if let Some(permission) = &response.permission {
-        info!("  Permission: {}", permission);
-    }
-    info!("  Created: {}", response.created_at);
-    info!("  Updated: {}", response.updated_at);
-    info!("  Size: {} ({})", format_bytes(response.size), response.size);
-    info!("  Path: {}", response.path);
+    info!("");
+    info!("📄 File Information:");
+    info!("  Name: {}", file_info.name());
+    info!("  Path: {}", file_info.path());
+    info!("  Type: {}", if file_info.is_folder() { "Folder" } else { "File" });
+    info!("  Size: {}", format_bytes(file_info.size()));
+    info!("  Created: {}", file_info.created_at());
+    info!("  Updated: {}", file_info.updated_at());
 
     if extended {
-        info!("\nMetadata:");
-        info!("  {}", to_string_pretty(&response.metadata).unwrap_or_default());
+        info!("");
+        info!("📋 Extended Info:");
+        info!("  Extended information not yet fully implemented");
+        info!("  Raw data available via version-specific clients");
     }
 
     Ok(())

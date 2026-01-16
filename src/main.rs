@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::error;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -49,10 +49,6 @@ struct Cli {
     /// Authentication token
     #[clap(short, long)]
     token: Option<String>,
-
-    /// API version (v3, v4, or auto for auto-detection)
-    #[clap(long, default_value = "auto")]
-    api_version: String,
 
     /// Log level (trace, debug, info, warn, error)
     #[clap(long, default_value = "info")]
@@ -137,20 +133,19 @@ async fn main() -> Result<()> {
     // Initialize logger with the specified log level and prefix setting
     init_logging_with_level(&log_level, cli.log_prefix);
 
-    // Unified client initialization via context module
+    // Unified API client initialization via context module
     let ctx = context::initialize_client(context::ClientConfig {
         url: url.clone(),
         email: email.clone(),
         token: cli.token.clone(),
-        api_version: None,  // For now, always use V4
     }).await?;
 
     // Determine if this is an auth command
     let is_auth_command = matches!(cli.command, Commands::Auth { .. });
 
-    // Get or create client
-    let mut client = match ctx.client {
-        Some(client) => client,
+    // Get or create API client
+    let mut api = match ctx.api {
+        Some(api) => api,
         None => {
             if is_auth_command {
                 let url_val = match url.as_ref() {
@@ -160,7 +155,7 @@ async fn main() -> Result<()> {
                         std::process::exit(1);
                     }
                 };
-                CloudreveClient::new(url_val)
+                CloudreveAPI::new(url_val).await?
             } else {
                 error!("No cached token found. Please authenticate first using the auth command.");
                 std::process::exit(1);
@@ -172,7 +167,7 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Auth { password } => {
             commands::auth::handle_auth(
-                &mut client,
+                &mut api,
                 &ctx.token_manager,
                 email,
                 url,
@@ -180,26 +175,26 @@ async fn main() -> Result<()> {
             ).await?;
         }
         Commands::File { command } => {
-            commands::file::handle_file_command(&client, command).await?;
+            commands::file::handle_file_command(&api, command).await?;
         }
         Commands::User { command } => {
-            commands::user::handle_user_command(&client, &ctx.token_manager, command).await?;
+            commands::user::handle_user_command(&api, &ctx.token_manager, command).await?;
         }
         Commands::Share { command } => {
-            commands::share::handle_share_command(&client, command).await?;
+            commands::share::handle_share_command(&api, command).await?;
         }
         Commands::Settings { command } => {
-            commands::settings::handle_settings_command(&client, command).await?;
+            commands::settings::handle_settings_command(&api, command).await?;
         }
         Commands::Dav { command } => {
-            commands::dav::handle_dav_command(&client, command).await?;
+            commands::dav::handle_dav_command(&api, command).await?;
         }
         Commands::Completions { shell } => {
             generate_completions(&shell);
             return Ok(());
         }
         Commands::Version => {
-            commands::version::handle_version(&client).await;
+            commands::version::handle_version(&api).await;
             return Ok(());
         }
     }

@@ -1,19 +1,18 @@
-use cloudreve_api::api::v4::models::*;
-use cloudreve_api::{CloudreveClient, Result};
-use crate::context::token_manager::TokenInfo;
-use crate::context::TokenManager;
-use log::{debug, error, info};
+use cloudreve_api::{CloudreveAPI, LoginResponse, Result};
+use crate::context::token_manager::TokenManager;
+use crate::context::token_manager::TokenInfo as CliTokenInfo;
+use log::{debug, info};
 use rpassword::read_password;
 use std::io::{self, Write};
 
 pub async fn handle_auth(
-    client: &mut CloudreveClient,
+    api: &mut CloudreveAPI,
     token_manager: &TokenManager,
     email: Option<String>,
     url: Option<String>,
     password: Option<String>,
 ) -> Result<()> {
-    info!("Authenticating with email: {:?}", email);
+    info!("Authenticating...");
 
     // If no URL provided, we need to ask for it
     let url = if let Some(url) = url {
@@ -47,39 +46,77 @@ pub async fn handle_auth(
         password_input.trim().to_string()
     };
 
-    let login_request = LoginRequest {
-        email: &email,
-        password: &password,
+    // Use the unified login method
+    let login_response = api.login(&email, &password).await?;
+
+    // Get API version
+    let api_version = api.api_version().to_string();
+
+    // Extract user info and token info from response
+    let (user_id, nickname, cli_token_info) = match &login_response {
+        LoginResponse::V3(r) => {
+            // V3 uses session cookie - get it from the client
+            let session_cookie = api.get_session_cookie()
+                .unwrap_or_else(|| {
+                    debug!("No session cookie found after V3 login");
+                    String::new()
+                });
+
+            if session_cookie.is_empty() {
+                debug!("Warning: V3 login returned empty session cookie");
+            }
+
+            let api_v = api_version.clone();
+            (
+                r.user.id.clone(),
+                r.user.nickname.clone(),
+                CliTokenInfo {
+                    user_id: r.user.id.clone(),
+                    email: email.clone(),
+                    nickname: r.user.nickname.clone(),
+                    access_token: session_cookie, // Save the session cookie
+                    refresh_token: String::new(),
+                    access_expires: String::new(),
+                    refresh_expires: String::new(),
+                    url: url.clone(),
+                    api_version: api_v,
+                },
+            )
+        }
+        LoginResponse::V4(r) => {
+            // V4 has proper JWT tokens
+            let api_v = api_version.clone();
+            (
+                r.user.id.clone(),
+                r.user.nickname.clone(),
+                CliTokenInfo {
+                    user_id: r.user.id.clone(),
+                    email: email.clone(),
+                    nickname: r.user.nickname.clone(),
+                    access_token: r.token.access_token.clone(),
+                    refresh_token: r.token.refresh_token.clone(),
+                    access_expires: r.token.access_expires.clone(),
+                    refresh_expires: r.token.refresh_expires.clone(),
+                    url: url.clone(),
+                    api_version: api_v,
+                },
+            )
+        }
     };
 
-    match client.login(&login_request).await {
-        Ok(login_data) => {
-            info!("Authentication successful!");
-            info!("User ID: {}", login_data.user.id);
-            info!("User Email: {}", login_data.user.email);
-            info!("User Nickname: {}", login_data.user.nickname);
-            debug!("Access Token: {}", login_data.token.access_token);
-            debug!("Refresh Token: {}", login_data.token.refresh_token);
-            debug!("Access Expires: {}", login_data.token.access_expires);
-            debug!("Refresh Expires: {}", login_data.token.refresh_expires);
+    info!("Authentication successful!");
+    info!("User ID: {}", user_id);
+    info!("User Nickname: {}", nickname);
+    info!("API Version: {}", api_version);
 
-            // Store the token for subsequent requests
-            let access_token = login_data.token.access_token.clone();
-            client.set_token(access_token);
+    debug!("Login response: {:?}", login_response);
 
-            // Save token to cache
-            let token_info = TokenInfo::from_login_data(&login_data, url);
-            token_manager.save_token(&token_info)?;
-            info!(
-                "Token saved to cache for user: {}({})",
-                login_data.user.nickname, login_data.user.email
-            );
-        }
-        Err(e) => {
-            error!("Authentication failed: {}", e);
-            return Err(e);
-        }
-    }
+    // Save token to cache
+    token_manager.save_token(&cli_token_info)?;
+    info!(
+        "Token saved to cache for user: {}({})",
+        nickname, email
+    );
 
     Ok(())
 }
