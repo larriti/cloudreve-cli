@@ -9,4 +9,14 @@ pub async fn handle_version(api: &CloudreveAPI) {
     info!("API Library Version: {}", api_library_version);
     info!("Detected API Version: {}", api.api_version());
     info!("Base URL: {}", api.base_url());
+
+    // Try to get server version
+    match api.get_server_version().await {
+        Ok(server_version) => {
+            info!("Server Version: {}", server_version);
+        }
+        Err(e) => {
+            info!("Server Version: Unable to fetch ({})", e);
+        }
+    }
 }
