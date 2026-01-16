@@ -1,5 +1,5 @@
 use cloudreve_api::{CloudreveAPI, Result, UnifiedClient, ApiVersion};
-use log::{info, warn};
+use log::{info, warn, debug};
 use super::token_manager::{TokenManager, TokenInfo as CliTokenInfo};
 
 /// Client initialization configuration
@@ -107,6 +107,7 @@ async fn load_and_refresh_token(
     };
 
     info!("Found cached token for user: {} (API version: {})", token_info.email, token_info.api_version);
+    debug!("token: {}", token_info.access_token);
     let cached_url = token_info.url.clone();
 
     // When URL is provided, verify it matches the cached token's URL
