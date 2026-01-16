@@ -1,3 +1,28 @@
+//! # Cloudreve CLI
+//!
+//! A command-line interface for interacting with Cloudreve API.
+//!
+//! ## Features
+//! - File operations (list, upload, download, delete, move, copy, rename)
+//! - User management (profile, quota, policies)
+//! - Share link management
+//! - WebDAV account management
+//! - Settings management
+//! - Shell completion support
+//!
+//! ## Usage
+//!
+//! ```bash
+//! # Authenticate
+//! cloudreve-cli --url https://instance.com auth
+//!
+//! # List files
+//! cloudreve-cli file list --path /
+//!
+//! # Upload a file
+//! cloudreve-cli file upload --file ./photo.jpg --path /photos
+//! ```
+
 use clap::{Parser, Subcommand};
 use cloudreve_api::{CloudreveAPI, Result};
 use log::error;

@@ -6,6 +6,8 @@ description = "Command-line interface for Cloudreve API"
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+keywords = ["cloudreve", "cli", "storage", "cloud"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "cloudreve-cli"

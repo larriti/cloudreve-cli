@@ -34,6 +34,12 @@ A powerful command-line interface for [Cloudreve](https://github.com/cloudreve/C
 cargo install cloudreve-cli
 ```
 
+Or install a specific version:
+
+```bash
+cargo install cloudreve-cli --version 0.3.0
+```
+
 ### Build from Source
 
 ```bash
