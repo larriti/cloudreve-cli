@@ -46,20 +46,38 @@ pub async fn handle_user_command(
     token_manager: &TokenManager,
     command: UserCommands,
 ) -> Result<()> {
-    // For now, use V4 client through inner()
-    match api.inner() {
-        UnifiedClient::V4(client) => match command {
-            UserCommands::Info => info::handle_info(client, token_manager).await,
-            UserCommands::Quota => quota::handle_quota(client).await,
-            UserCommands::Policies => policies::handle_policies(client).await,
-            UserCommands::UpdateProfile { nickname, avatar } => {
-                update_profile::handle_update_profile(client, nickname, avatar).await
+    match command {
+        UserCommands::Info => info::handle_info(api, token_manager).await,
+        UserCommands::Quota => quota::handle_quota(api).await,
+        UserCommands::Policies => {
+            // Policies is not supported in V3
+            match api.inner() {
+                UnifiedClient::V4(client) => policies::handle_policies(client).await,
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Storage policies list not available in V3 API".to_string()
+                )),
             }
-            UserCommands::ChangePassword {
-                old_password,
-                new_password,
-            } => change_password::handle_change_password(client, old_password, new_password).await,
-        },
-        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("User commands not yet supported for V3 API".to_string())),
+        }
+        UserCommands::UpdateProfile { nickname, avatar } => {
+            // Update profile is not supported in V3
+            match api.inner() {
+                UnifiedClient::V4(client) => update_profile::handle_update_profile(client, nickname, avatar).await,
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Update profile not available in V3 API".to_string()
+                )),
+            }
+        }
+        UserCommands::ChangePassword {
+            old_password,
+            new_password,
+        } => {
+            // Change password is not supported in V3
+            match api.inner() {
+                UnifiedClient::V4(client) => change_password::handle_change_password(client, old_password, new_password).await,
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Change password not available in V3 API".to_string()
+                )),
+            }
+        }
     }
 }

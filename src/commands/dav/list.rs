@@ -1,10 +1,10 @@
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
-pub async fn handle_list(client: &CloudreveClient, page_size: u32) -> Result<()> {
+pub async fn handle_list(api: &CloudreveAPI, page_size: u32) -> Result<()> {
     info!("Listing WebDAV accounts...");
 
-    let response = client.list_dav_accounts(page_size, None).await?;
+    let response = api.list_dav_accounts(page_size).await?;
 
     if response.accounts.is_empty() {
         info!("No WebDAV accounts found.");
@@ -16,8 +16,15 @@ pub async fn handle_list(client: &CloudreveClient, page_size: u32) -> Result<()>
         info!("");
         info!("  ID:          {}", account.id);
         info!("  Name:        {}", account.name);
-        info!("  URI:         {}", account.uri);
-        info!("  Password:    {}", account.password);
+        if let Some(uri) = &account.uri {
+            info!("  URI:         {}", uri);
+        }
+        if let Some(server) = &account.server {
+            info!("  Server:      {}", server);
+        }
+        if let Some(password) = &account.password {
+            info!("  Password:    {}", password);
+        }
         info!("  Created:     {}", account.created_at);
     }
 

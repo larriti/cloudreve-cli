@@ -5,7 +5,7 @@ pub mod delete;
 pub mod list;
 pub mod update;
 
-use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
+use cloudreve_api::{CloudreveAPI, Result};
 
 #[derive(clap::Subcommand)]
 pub enum DavCommands {
@@ -68,25 +68,29 @@ pub async fn handle_dav_command(
     api: &CloudreveAPI,
     command: DavCommands,
 ) -> Result<()> {
-    // For now, use V4 client through inner()
-    match api.inner() {
-        UnifiedClient::V4(client) => match command {
-            DavCommands::List { page_size } => list::handle_list(client, page_size).await,
-            DavCommands::Create {
-                uri,
-                name,
-                readonly,
-                proxy,
-            } => create::handle_create(client, uri, name, readonly, proxy).await,
-            DavCommands::Update {
-                id,
-                uri,
-                name,
-                readonly,
-                proxy,
-            } => update::handle_update(client, id, uri, name, readonly, proxy).await,
-            DavCommands::Delete { id } => delete::handle_delete(client, id).await,
-        },
-        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("DAV commands not yet supported for V3 API".to_string())),
+    match command {
+        DavCommands::List { page_size } => {
+            list::handle_list(api, page_size).await
+        }
+        DavCommands::Create {
+            uri,
+            name,
+            readonly,
+            proxy,
+        } => {
+            create::handle_create(api, uri, name, readonly, proxy).await
+        }
+        DavCommands::Update {
+            id,
+            uri,
+            name,
+            readonly,
+            proxy,
+        } => {
+            update::handle_update(api, id, uri, name, readonly, proxy).await
+        }
+        DavCommands::Delete { id } => {
+            delete::handle_delete(api, id).await
+        }
     }
 }

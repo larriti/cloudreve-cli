@@ -5,12 +5,14 @@ use crate::utils::format_bytes;
 pub async fn handle_list(
     api: &CloudreveAPI,
     path: String,
-    _page: Option<u32>,
-    _page_size: Option<u32>,
+    page: Option<u32>,
+    page_size: Option<u32>,
 ) -> Result<()> {
     info!("Listing files in path: {}", path);
 
-    let file_list = api.list_files(&path).await?;
+    // Default page_size to 100 if not specified
+    let page_size = page_size.unwrap_or(100);
+    let file_list = api.list_files(&path, page, Some(page_size)).await?;
 
     // Display parent directory information
     info!("📂 Parent: {}", file_list.parent_name());

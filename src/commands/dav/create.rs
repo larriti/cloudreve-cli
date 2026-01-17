@@ -1,9 +1,8 @@
-use cloudreve_api::api::v4::models::CreateDavAccountRequest;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
 pub async fn handle_create(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uri: String,
     name: String,
     readonly: bool,
@@ -11,21 +10,11 @@ pub async fn handle_create(
 ) -> Result<()> {
     info!("Creating WebDAV account '{}'...", name);
 
-    let request = CreateDavAccountRequest {
-        uri,
-        name,
-        readonly: Some(readonly),
-        proxy: Some(proxy),
-        disable_sys_files: None,
-    };
-
-    let account = client.create_dav_account(&request).await?;
+    api.create_dav_account(&uri, &name, readonly, proxy).await?;
 
     info!("WebDAV account created successfully!");
-    info!("  ID:       {}", account.id);
-    info!("  Name:     {}", account.name);
-    info!("  URI:      {}", account.uri);
-    info!("  Password: {}", account.password);
+    info!("  Name:     {}", name);
+    info!("  URI:      {}", uri);
 
     Ok(())
 }

@@ -1,50 +1,34 @@
-use cloudreve_api::api::v4::models::CreateDownloadUrlRequest;
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::{error, info};
-use reqwest::Client;
 
 pub async fn handle_preview(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uri: String,
     preview_type: String,
 ) -> Result<()> {
     info!("Previewing: {} (type: {})", uri, preview_type);
 
-    // Create download URL (API layer handles URI conversion)
-    let request = CreateDownloadUrlRequest {
-        uris: vec![&uri],
-        download: Some(true),
-        redirect: None,
-        entity: None,
-        use_primary_site_url: None,
-        skip_error: None,
-        archive: None,
-        no_cache: None,
-    };
-
-    let download_response = client.create_download_url(&request).await?;
-
-    if download_response.urls.is_empty() {
-        error!("No download URLs returned from API");
-        return Err(cloudreve_api::Error::Api {
-            code: 400,
-            message: "No download URLs available".to_string(),
-        });
-    }
-
-    let download_url = &download_response.urls[0].url;
-
-    match preview_type.as_str() {
-        "text" => preview_text(download_url).await?,
-        "json" => preview_json(download_url).await?,
-        "image" => preview_image(download_url).await?,
-        _ => {
-            error!("Unsupported preview type: {}", preview_type);
-            error!("Supported types: text, json, image");
-            return Err(cloudreve_api::Error::Api {
-                code: 400,
-                message: format!("Unsupported preview type: {}", preview_type),
-            });
+    // For preview, we need to get the download URL first
+    match api.download_file(&uri).await {
+        Ok(download_url) => {
+            match preview_type.as_str() {
+                "text" => preview_text(&download_url).await?,
+                "json" => preview_json(&download_url).await?,
+                "image" => preview_image(&download_url).await?,
+                _ => {
+                    error!("Unsupported preview type: {}", preview_type);
+                    error!("Supported types: text, json, image");
+                    return Err(cloudreve_api::Error::Api {
+                        code: 400,
+                        message: format!("Unsupported preview type: {}", preview_type),
+                    });
+                }
+            }
+        }
+        Err(e) => {
+            info!("Preview requires download. Error getting download URL: {}", e);
+            info!("For preview, download the file first:");
+            info!("  cloudreve-cli file download --uri {} --output ./preview_file", uri);
         }
     }
 
@@ -52,7 +36,7 @@ pub async fn handle_preview(
 }
 
 async fn preview_text(url: &str) -> Result<()> {
-    let http_client = Client::new();
+    let http_client = reqwest::Client::new();
     let response = http_client.get(url).send().await?;
 
     if !response.status().is_success() {
@@ -78,7 +62,7 @@ async fn preview_text(url: &str) -> Result<()> {
 }
 
 async fn preview_json(url: &str) -> Result<()> {
-    let http_client = Client::new();
+    let http_client = reqwest::Client::new();
     let response = http_client.get(url).send().await?;
 
     if !response.status().is_success() {

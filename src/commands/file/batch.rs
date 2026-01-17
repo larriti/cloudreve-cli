@@ -1,4 +1,4 @@
-use cloudreve_api::{CloudreveClient, Result};
+use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
 use log::{error, info, warn};
 use std::fs;
 use std::path::Path;
@@ -8,13 +8,23 @@ use super::download::handle_download;
 
 /// Batch upload files
 pub async fn handle_batch_upload(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     paths: Vec<String>,
     dest_path: String,
     overwrite: bool,
     policy_id: Option<String>,
     recursive: bool,
 ) -> Result<()> {
+    // Batch upload is only supported in V4
+    match api.inner() {
+        UnifiedClient::V3(_) => {
+            return Err(cloudreve_api::Error::InvalidResponse(
+                "Batch upload not available in V3 API".to_string()
+            ));
+        }
+        UnifiedClient::V4(_) => {}
+    }
+
     info!("Starting batch upload of {} items", paths.len());
 
     let mut uploaded = 0usize;
@@ -25,7 +35,7 @@ pub async fn handle_batch_upload(
         let path_obj = Path::new(&path);
 
         if path_obj.is_file() {
-            match handle_upload(client, path.clone(), dest_path.clone(), overwrite, policy_id.clone()).await {
+            match handle_upload(api, path.clone(), dest_path.clone(), overwrite, policy_id.clone()).await {
                 Ok(_) => {
                     uploaded += 1;
                     // Get file size
@@ -40,7 +50,7 @@ pub async fn handle_batch_upload(
                 }
             }
         } else if path_obj.is_dir() && recursive {
-            match upload_directory(client, path_obj, &dest_path, overwrite, policy_id.as_deref(), &mut total_size).await {
+            match upload_directory(api, path_obj, &dest_path, overwrite, policy_id.as_deref(), &mut total_size).await {
                 Ok(count) => {
                     uploaded += count;
                 }
@@ -64,7 +74,7 @@ pub async fn handle_batch_upload(
 }
 
 async fn upload_directory(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     dir_path: &Path,
     dest_path: &str,
     overwrite: bool,
@@ -86,7 +96,7 @@ async fn upload_directory(
                 }
             )?;
 
-            match handle_upload(client, file_str.to_string(), dest_path.to_string(), overwrite, policy_id.map(|s| s.to_string())).await {
+            match handle_upload(api, file_str.to_string(), dest_path.to_string(), overwrite, policy_id.map(|s| s.to_string())).await {
                 Ok(_) => {
                     count += 1;
                     if let Ok(metadata) = path.metadata() {
@@ -104,7 +114,7 @@ async fn upload_directory(
                 .unwrap_or("");
             let new_dest = format!("{}/{}/", dest_path.trim_end_matches('/'), dir_name);
             let upload_future = Box::pin(upload_directory(
-                client,
+                api,
                 &path,
                 &new_dest,
                 overwrite,
@@ -122,11 +132,21 @@ async fn upload_directory(
 
 /// Batch download files
 pub async fn handle_batch_download(
-    client: &CloudreveClient,
+    api: &CloudreveAPI,
     uris: Vec<String>,
     output_dir: String,
     expires_in: Option<u32>,
 ) -> Result<()> {
+    // Batch download is only supported in V4
+    match api.inner() {
+        UnifiedClient::V3(_) => {
+            return Err(cloudreve_api::Error::InvalidResponse(
+                "Batch download not available in V3 API".to_string()
+            ));
+        }
+        UnifiedClient::V4(_) => {}
+    }
+
     info!("Starting batch download of {} items", uris.len());
 
     let mut downloaded = 0usize;
@@ -134,7 +154,7 @@ pub async fn handle_batch_download(
     let mut total_size = 0u64;
 
     for uri in uris {
-        match handle_download(client, uri.clone(), output_dir.clone(), expires_in).await {
+        match handle_download(api, uri.clone(), output_dir.clone(), expires_in).await {
             Ok(_) => {
                 downloaded += 1;
                 // Try to get downloaded file size
