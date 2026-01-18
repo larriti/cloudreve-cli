@@ -1,7 +1,10 @@
 use cloudreve_api::{CloudreveAPI, Result, UnifiedClient, UserInfo};
 use log::info;
 
-pub async fn handle_info(api: &CloudreveAPI, token_manager: &crate::context::TokenManager) -> Result<()> {
+pub async fn handle_info(
+    api: &CloudreveAPI,
+    token_manager: &crate::context::TokenManager,
+) -> Result<()> {
     info!("Getting user information...");
 
     let user = match api.inner() {
@@ -13,9 +16,9 @@ pub async fn handle_info(api: &CloudreveAPI, token_manager: &crate::context::Tok
             // V4: Get user_id from token and call user info endpoint
             let token_info = token_manager
                 .get_token_by_url(api.base_url())?
-                .ok_or_else(|| cloudreve_api::Error::InvalidResponse(
-                    "Token expired or invalid.".to_string()
-                ))?;
+                .ok_or_else(|| {
+                    cloudreve_api::Error::InvalidResponse("Token expired or invalid.".to_string())
+                })?;
 
             let v4_user = client.get_user_info(&token_info.user_id).await?;
             UserInfo {

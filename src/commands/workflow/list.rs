@@ -1,12 +1,8 @@
-use cloudreve_api::api::v4::ApiV4Client;
 use cloudreve_api::Result;
+use cloudreve_api::api::v4::ApiV4Client;
 use log::info;
 
-pub async fn handle_list(
-    client: &ApiV4Client,
-    category: String,
-    per_page: String,
-) -> Result<()> {
+pub async fn handle_list(client: &ApiV4Client, category: String, per_page: String) -> Result<()> {
     info!("Listing workflow tasks (category: {})...", category);
 
     let page_size = per_page.parse().unwrap_or(25);
@@ -33,9 +29,13 @@ pub async fn handle_list(
         let type_str = format!("{:?}", task.r#type);
         let type_str = type_str.to_lowercase();
 
+        // 获取任务状态作为字符串
+        let status_str = format!("{:?}", task.status);
+        let status_str = status_str.to_lowercase();
+
         info!(
             "  {} {} | {} | {} | {}",
-            status_icon, task.id, type_str, task.created_at, format!("{:?}", task.status)
+            status_icon, task.id, type_str, task.created_at, status_str
         );
         if let Some(duration) = task.duration {
             info!("     Duration: {}s", duration / 1000);

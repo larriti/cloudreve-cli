@@ -110,16 +110,12 @@ pub enum WorkflowCommands {
     },
 }
 
-pub async fn handle_workflow_command(
-    api: &CloudreveAPI,
-    command: WorkflowCommands,
-) -> Result<()> {
+pub async fn handle_workflow_command(api: &CloudreveAPI, command: WorkflowCommands) -> Result<()> {
     match api.inner() {
         UnifiedClient::V4(client) => match command {
-            WorkflowCommands::List {
-                category,
-                per_page,
-            } => list::handle_list(client, category, per_page).await,
+            WorkflowCommands::List { category, per_page } => {
+                list::handle_list(client, category, per_page).await
+            }
 
             WorkflowCommands::Progress { task } => progress::handle_progress(client, task).await,
 
@@ -160,8 +156,16 @@ pub async fn handle_workflow_command(
                     user_id
                 };
 
-                import::handle_import(client, src, dst, final_user_id, policy_id, extract_media_meta, recursive)
-                    .await
+                import::handle_import(
+                    client,
+                    src,
+                    dst,
+                    final_user_id,
+                    policy_id,
+                    extract_media_meta,
+                    recursive,
+                )
+                .await
             }
 
             WorkflowCommands::Download { command } => {

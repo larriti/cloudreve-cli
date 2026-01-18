@@ -15,7 +15,11 @@ pub async fn handle_list(
     let file_list = api.list_files(&path, page, Some(page_size)).await?;
 
     // Display parent directory information
-    info!("📂 Parent: {} (ID: {})", file_list.parent_name(), file_list.parent_id());
+    info!(
+        "📂 Parent: {} (ID: {})",
+        file_list.parent_name(),
+        file_list.parent_id()
+    );
     let parent_path = file_list.parent_path();
     if !parent_path.is_empty() {
         info!("   URI: {}", parent_path);

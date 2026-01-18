@@ -1,7 +1,7 @@
+use cloudreve_api::Result;
+use cloudreve_api::api::v4::ApiV4Client;
 use cloudreve_api::api::v4::models::{CreateDownloadRequest, SelectDownloadFilesRequest};
 use cloudreve_api::api::v4::uri::path_to_uri;
-use cloudreve_api::api::v4::ApiV4Client;
-use cloudreve_api::Result;
 use log::info;
 
 #[derive(clap::Subcommand)]
@@ -94,11 +94,7 @@ async fn handle_create(
     Ok(())
 }
 
-async fn handle_select(
-    client: &ApiV4Client,
-    task_id: String,
-    files: String,
-) -> Result<()> {
+async fn handle_select(client: &ApiV4Client, task_id: String, files: String) -> Result<()> {
     info!("Selecting files for task {}: {}", task_id, files);
 
     let files_vec: Vec<&str> = files.split(',').map(|s| s.trim()).collect();

@@ -1,6 +1,6 @@
-use cloudreve_api::api::v4::models::ImportRequest;
-use cloudreve_api::api::v4::ApiV4Client;
 use cloudreve_api::Result;
+use cloudreve_api::api::v4::ApiV4Client;
+use cloudreve_api::api::v4::models::ImportRequest;
 use log::info;
 
 pub async fn handle_import(
@@ -17,8 +17,9 @@ pub async fn handle_import(
         src
     } else {
         // Get current working directory and append relative path
-        let current_dir = std::env::current_dir()
-            .map_err(|e| cloudreve_api::Error::InvalidResponse(format!("Failed to get current directory: {}", e)))?;
+        let current_dir = std::env::current_dir().map_err(|e| {
+            cloudreve_api::Error::InvalidResponse(format!("Failed to get current directory: {}", e))
+        })?;
         let current_dir_str = current_dir.to_string_lossy().to_string();
         format!("{}/{}", current_dir_str, src)
     };
@@ -28,7 +29,8 @@ pub async fn handle_import(
     // User ID is required (get from token if not specified)
     let user_id = user_id.ok_or_else(|| {
         cloudreve_api::Error::InvalidResponse(
-            "Could not determine user_id. Please specify --user-id or ensure you're logged in.".to_string()
+            "Could not determine user_id. Please specify --user-id or ensure you're logged in."
+                .to_string(),
         )
     })?;
     info!("Using user ID: {}", user_id);
@@ -38,7 +40,8 @@ pub async fn handle_import(
         pid
     } else {
         return Err(cloudreve_api::Error::InvalidResponse(
-            "Target directory has no storage policy. Please specify --policy-id.".to_string()));
+            "Target directory has no storage policy. Please specify --policy-id.".to_string(),
+        ));
     };
 
     let request = ImportRequest {
