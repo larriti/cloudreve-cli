@@ -1,5 +1,4 @@
 /// Utility functions for CLI display formatting
-
 /// Format bytes into human-readable size (KB, MB, GB, TB)
 pub fn format_bytes(bytes: i64) -> String {
     const TB: i64 = 1024 * 1024 * 1024 * 1024;

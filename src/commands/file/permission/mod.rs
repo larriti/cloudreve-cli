@@ -58,17 +58,15 @@ pub async fn handle_permission(
             anonymous,
             everyone,
         } => {
-            set::handle_set(
-                client,
-                uri,
+            let options = set::PermissionOptions {
                 user_explicit,
                 group_explicit,
                 same_group,
                 other,
                 anonymous,
                 everyone,
-            )
-            .await
+            };
+            set::handle_set(client, uri, options).await
         }
 
         PermissionCommands::Delete { uri } => delete::handle_delete(client, uri).await,

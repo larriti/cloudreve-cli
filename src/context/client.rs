@@ -126,7 +126,7 @@ async fn load_and_refresh_token(
     }
 
     // Parse the API version from cache
-    let api_version = ApiVersion::from_str(&token_info.api_version).unwrap_or(ApiVersion::V4); // Default to V4 for backward compatibility
+    let api_version = ApiVersion::from_str_inner(&token_info.api_version).unwrap_or(ApiVersion::V4); // Default to V4 for backward compatibility
 
     // Create API client with known version (no probing needed!)
     info!(
