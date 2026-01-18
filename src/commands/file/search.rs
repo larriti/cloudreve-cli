@@ -1,7 +1,7 @@
+use crate::utils::format_bytes;
 use cloudreve_api::api::v4::models::{FileType, ListFilesRequest};
 use cloudreve_api::{CloudreveClient, Result};
 use log::{error, info};
-use crate::utils::format_bytes;
 
 /// Search filter options
 #[derive(Debug, Clone)]
@@ -83,11 +83,7 @@ async fn search_recursive(
                     let sub_path = format!("{}/{}/", path.trim_end_matches('/'), file.name);
                     // Use Box::pin for recursive async call
                     let search_future = Box::pin(search_recursive(
-                        client,
-                        &sub_path,
-                        filter,
-                        recursive,
-                        results,
+                        client, &sub_path, filter, recursive, results,
                     ));
                     let _ = search_future.await;
                 }
@@ -103,36 +99,39 @@ async fn search_recursive(
 
 fn matches_filter(file: &cloudreve_api::api::v4::models::File, filter: &SearchFilter) -> bool {
     // Name pattern filter (case-insensitive substring)
-    if let Some(pattern) = &filter.name_pattern {
-        if !file.name.to_lowercase().contains(&pattern.to_lowercase()) {
-            return false;
-        }
+    if let Some(pattern) = &filter.name_pattern
+        && !file.name.to_lowercase().contains(&pattern.to_lowercase())
+    {
+        return false;
     }
 
     // Type filter
-    if let Some(ft) = &filter.file_type {
-        if &file.r#type != ft {
-            return false;
-        }
+    if let Some(ft) = &filter.file_type
+        && &file.r#type != ft
+    {
+        return false;
     }
 
     // Size filter
-    if let Some(min) = filter.min_size {
-        if file.size < min {
-            return false;
-        }
+    if let Some(min) = filter.min_size
+        && file.size < min
+    {
+        return false;
     }
-    if let Some(max) = filter.max_size {
-        if file.size > max {
-            return false;
-        }
+    if let Some(max) = filter.max_size
+        && file.size > max
+    {
+        return false;
     }
 
     // Extension filter (case-insensitive)
-    if let Some(ext) = &filter.extension {
-        if !file.name.to_lowercase().ends_with(&format!(".{}", ext.to_lowercase())) {
-            return false;
-        }
+    if let Some(ext) = &filter.extension
+        && !file
+            .name
+            .to_lowercase()
+            .ends_with(&format!(".{}", ext.to_lowercase()))
+    {
+        return false;
     }
 
     true

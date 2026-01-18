@@ -4,8 +4,8 @@ pub mod policies;
 pub mod quota;
 pub mod update_profile;
 
-use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
 use crate::context::TokenManager;
+use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
 
 #[derive(clap::Subcommand)]
 pub enum UserCommands {
@@ -54,16 +54,18 @@ pub async fn handle_user_command(
             match api.inner() {
                 UnifiedClient::V4(client) => policies::handle_policies(client).await,
                 UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
-                    "Storage policies list not available in V3 API".to_string()
+                    "Storage policies list not available in V3 API".to_string(),
                 )),
             }
         }
         UserCommands::UpdateProfile { nickname, avatar } => {
             // Update profile is not supported in V3
             match api.inner() {
-                UnifiedClient::V4(client) => update_profile::handle_update_profile(client, nickname, avatar).await,
+                UnifiedClient::V4(client) => {
+                    update_profile::handle_update_profile(client, nickname, avatar).await
+                }
                 UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
-                    "Update profile not available in V3 API".to_string()
+                    "Update profile not available in V3 API".to_string(),
                 )),
             }
         }
@@ -73,9 +75,12 @@ pub async fn handle_user_command(
         } => {
             // Change password is not supported in V3
             match api.inner() {
-                UnifiedClient::V4(client) => change_password::handle_change_password(client, old_password, new_password).await,
+                UnifiedClient::V4(client) => {
+                    change_password::handle_change_password(client, old_password, new_password)
+                        .await
+                }
                 UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
-                    "Change password not available in V3 API".to_string()
+                    "Change password not available in V3 API".to_string(),
                 )),
             }
         }

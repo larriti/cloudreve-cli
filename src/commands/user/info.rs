@@ -1,5 +1,5 @@
-use cloudreve_api::{CloudreveAPI, Result};
 use crate::context::TokenManager;
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
 pub async fn handle_info(api: &CloudreveAPI, _token_manager: &TokenManager) -> Result<()> {

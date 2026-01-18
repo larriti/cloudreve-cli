@@ -1,5 +1,5 @@
-use cloudreve_api::{CloudreveAPI, Result};
 use cloudreve_api::api::v4::uri::uri_to_path;
+use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
 
 pub async fn handle_list(api: &CloudreveAPI, page_size: u32) -> Result<()> {
@@ -20,8 +20,7 @@ pub async fn handle_list(api: &CloudreveAPI, page_size: u32) -> Result<()> {
         if let Some(uri) = &account.uri {
             if let Ok(path) = uri_to_path(uri) {
                 info!("  Path:        {}", path);
-            }
-            else {
+            } else {
                 info!("  Path:        {}", uri);
             }
         }

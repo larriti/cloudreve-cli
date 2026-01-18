@@ -20,10 +20,7 @@ pub enum MetadataCommands {
     },
 }
 
-pub async fn handle_metadata(
-    client: &CloudreveClient,
-    command: MetadataCommands,
-) -> Result<()> {
+pub async fn handle_metadata(client: &CloudreveClient, command: MetadataCommands) -> Result<()> {
     match command {
         MetadataCommands::Update {
             uri,

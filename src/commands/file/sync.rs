@@ -1,15 +1,15 @@
+use crate::utils::format_bytes;
+use chrono::{DateTime, Utc};
 use cloudreve_api::api::v4::models::ListFilesRequest;
 use cloudreve_api::{CloudreveClient, Result};
 use log::{error, info, warn};
 use std::collections::HashMap;
 use std::fs;
-use crate::utils::format_bytes;
-use chrono::{DateTime, Utc};
 
 pub enum SyncDirection {
-    Up,    // Local -> Remote
-    Down,  // Remote -> Local
-    Both,  // Bidirectional
+    Up,   // Local -> Remote
+    Down, // Remote -> Local
+    Both, // Bidirectional
 }
 
 pub async fn handle_sync(
@@ -26,7 +26,10 @@ pub async fn handle_sync(
         "down" => SyncDirection::Down,
         "both" => SyncDirection::Both,
         _ => {
-            error!("Invalid direction: {}. Use 'up', 'down', or 'both'", direction);
+            error!(
+                "Invalid direction: {}. Use 'up', 'down', or 'both'",
+                direction
+            );
             return Err(cloudreve_api::Error::Api {
                 code: 400,
                 message: format!("Invalid direction: {}", direction),
@@ -56,11 +59,10 @@ async fn sync_up(
     info!("Sync UP: {} -> {}", local_path, remote_path);
 
     // Get local files
-    let local_files = scan_local_directory(local_path)
-        .map_err(|e| cloudreve_api::Error::Api {
-            code: 500,
-            message: format!("Failed to scan local directory: {}", e),
-        })?;
+    let local_files = scan_local_directory(local_path).map_err(|e| cloudreve_api::Error::Api {
+        code: 500,
+        message: format!("Failed to scan local directory: {}", e),
+    })?;
 
     // Get remote files
     let remote_files = list_remote_files(client, remote_path).await?;
@@ -82,8 +84,10 @@ async fn sync_up(
 
             if local_time > remote_time {
                 if dry_run {
-                    info!("[DRY RUN] Would upload: {} (newer: {} > {})",
-                        name, local_time, remote_time);
+                    info!(
+                        "[DRY RUN] Would upload: {} (newer: {} > {})",
+                        name, local_time, remote_time
+                    );
                 } else {
                     info!("Uploading: {} (newer)", name);
                     // TODO: Implement actual upload
@@ -127,8 +131,8 @@ async fn sync_down(
     let remote_files = list_remote_files(client, remote_path).await?;
 
     // Get local files map
-    let local_map = scan_local_directory_to_map(local_path)
-        .map_err(|e| cloudreve_api::Error::Api {
+    let local_map =
+        scan_local_directory_to_map(local_path).map_err(|e| cloudreve_api::Error::Api {
             code: 500,
             message: format!("Failed to scan local directory: {}", e),
         })?;
@@ -147,8 +151,10 @@ async fn sync_down(
 
             if remote_time > local_time {
                 if dry_run {
-                    info!("[DRY RUN] Would download: {} (newer: {} > {})",
-                        name, remote_time, local_time);
+                    info!(
+                        "[DRY RUN] Would download: {} (newer: {} > {})",
+                        name, remote_time, local_time
+                    );
                 } else {
                     info!("Downloading: {} (newer)", name);
                     // TODO: Implement actual download
@@ -203,7 +209,9 @@ struct LocalFileInfo {
     modified: DateTime<Utc>,
 }
 
-fn scan_local_directory(path: &str) -> std::result::Result<Vec<LocalFileInfo>, Box<dyn std::error::Error>> {
+fn scan_local_directory(
+    path: &str,
+) -> std::result::Result<Vec<LocalFileInfo>, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
 
     for entry in fs::read_dir(path)? {
@@ -226,7 +234,9 @@ fn scan_local_directory(path: &str) -> std::result::Result<Vec<LocalFileInfo>, B
     Ok(files)
 }
 
-fn scan_local_directory_to_map(path: &str) -> std::result::Result<HashMap<String, LocalFileInfo>, Box<dyn std::error::Error>> {
+fn scan_local_directory_to_map(
+    path: &str,
+) -> std::result::Result<HashMap<String, LocalFileInfo>, Box<dyn std::error::Error>> {
     let files = scan_local_directory(path)?;
     Ok(files.into_iter().map(|f| (f.name.clone(), f)).collect())
 }

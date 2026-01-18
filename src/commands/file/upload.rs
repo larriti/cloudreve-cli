@@ -48,14 +48,17 @@ pub async fn handle_upload(
 
     // 4. Create progress bar
     let pb = ProgressBar::new(file_size);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-        .unwrap()
-        .progress_chars("=>-"));
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .unwrap()
+            .progress_chars("=>-"),
+    );
     pb.set_message("Uploading");
 
     // 5. Upload using CloudreveAPI (handles V3/V4 differences internally)
-    api.upload_file(&upload_path, file_content, policy_id.as_deref()).await?;
+    api.upload_file(&upload_path, file_content, policy_id.as_deref())
+        .await?;
 
     pb.finish_with_message("Upload completed!");
     info!("File uploaded successfully!");

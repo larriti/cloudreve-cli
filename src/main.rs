@@ -46,11 +46,17 @@ fn init_logging_with_level(level: &str, show_prefix: bool) {
             use std::io::Write;
             if LOG_PREFIX.load(Ordering::SeqCst) {
                 // Full format: timestamp + level + module path
-                writeln!(buf, "[{} {}{}] {}",
+                writeln!(
+                    buf,
+                    "[{} {}{}] {}",
                     chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ"),
                     record.level(),
-                    record.module_path().map(|m| format!(" {}", m)).unwrap_or_default(),
-                    record.args())
+                    record
+                        .module_path()
+                        .map(|m| format!(" {}", m))
+                        .unwrap_or_default(),
+                    record.args()
+                )
             } else {
                 // Clean format: message only
                 writeln!(buf, "{}", record.args())
@@ -163,7 +169,8 @@ async fn main() -> Result<()> {
         url: url.clone(),
         email: email.clone(),
         token: cli.token.clone(),
-    }).await?;
+    })
+    .await?;
 
     // Determine if this is an auth command
     let is_auth_command = matches!(cli.command, Commands::Auth { .. });
@@ -176,7 +183,9 @@ async fn main() -> Result<()> {
                 let url_val = match url.as_ref() {
                     Some(u) => u,
                     None => {
-                        error!("URL is required for authentication. Please provide it with --url option or set default_url in config file.");
+                        error!(
+                            "URL is required for authentication. Please provide it with --url option or set default_url in config file."
+                        );
                         std::process::exit(1);
                     }
                 };
@@ -191,13 +200,7 @@ async fn main() -> Result<()> {
     // Command dispatch
     match cli.command {
         Commands::Auth { password } => {
-            commands::auth::handle_auth(
-                &mut api,
-                &ctx.token_manager,
-                email,
-                url,
-                password
-            ).await?;
+            commands::auth::handle_auth(&mut api, &ctx.token_manager, email, url, password).await?;
         }
         Commands::File { command } => {
             commands::file::handle_file_command(&api, command).await?;
@@ -235,19 +238,44 @@ fn generate_completions(shell: &str) {
 
     match shell {
         "bash" => {
-            clap_complete::generate(clap_complete::shells::Bash, &mut app, "cloudreve-cli", &mut io::stdout());
+            clap_complete::generate(
+                clap_complete::shells::Bash,
+                &mut app,
+                "cloudreve-cli",
+                &mut io::stdout(),
+            );
         }
         "zsh" => {
-            clap_complete::generate(clap_complete::shells::Zsh, &mut app, "cloudreve-cli", &mut io::stdout());
+            clap_complete::generate(
+                clap_complete::shells::Zsh,
+                &mut app,
+                "cloudreve-cli",
+                &mut io::stdout(),
+            );
         }
         "fish" => {
-            clap_complete::generate(clap_complete::shells::Fish, &mut app, "cloudreve-cli", &mut io::stdout());
+            clap_complete::generate(
+                clap_complete::shells::Fish,
+                &mut app,
+                "cloudreve-cli",
+                &mut io::stdout(),
+            );
         }
         "elvish" => {
-            clap_complete::generate(clap_complete::shells::Elvish, &mut app, "cloudreve-cli", &mut io::stdout());
+            clap_complete::generate(
+                clap_complete::shells::Elvish,
+                &mut app,
+                "cloudreve-cli",
+                &mut io::stdout(),
+            );
         }
         "powershell" | "pwsh" => {
-            clap_complete::generate(clap_complete::shells::PowerShell, &mut app, "cloudreve-cli", &mut io::stdout());
+            clap_complete::generate(
+                clap_complete::shells::PowerShell,
+                &mut app,
+                "cloudreve-cli",
+                &mut io::stdout(),
+            );
         }
         _ => {
             error!("Unsupported shell: {}", shell);

@@ -1,34 +1,34 @@
 use cloudreve_api::{CloudreveAPI, Result};
 use log::{error, info};
 
-pub async fn handle_preview(
-    api: &CloudreveAPI,
-    uri: String,
-    preview_type: String,
-) -> Result<()> {
+pub async fn handle_preview(api: &CloudreveAPI, uri: String, preview_type: String) -> Result<()> {
     info!("Previewing: {} (type: {})", uri, preview_type);
 
     // For preview, we need to get the download URL first
     match api.download_file(&uri).await {
-        Ok(download_url) => {
-            match preview_type.as_str() {
-                "text" => preview_text(&download_url).await?,
-                "json" => preview_json(&download_url).await?,
-                "image" => preview_image(&download_url).await?,
-                _ => {
-                    error!("Unsupported preview type: {}", preview_type);
-                    error!("Supported types: text, json, image");
-                    return Err(cloudreve_api::Error::Api {
-                        code: 400,
-                        message: format!("Unsupported preview type: {}", preview_type),
-                    });
-                }
+        Ok(download_url) => match preview_type.as_str() {
+            "text" => preview_text(&download_url).await?,
+            "json" => preview_json(&download_url).await?,
+            "image" => preview_image(&download_url).await?,
+            _ => {
+                error!("Unsupported preview type: {}", preview_type);
+                error!("Supported types: text, json, image");
+                return Err(cloudreve_api::Error::Api {
+                    code: 400,
+                    message: format!("Unsupported preview type: {}", preview_type),
+                });
             }
-        }
+        },
         Err(e) => {
-            info!("Preview requires download. Error getting download URL: {}", e);
+            info!(
+                "Preview requires download. Error getting download URL: {}",
+                e
+            );
             info!("For preview, download the file first:");
-            info!("  cloudreve-cli file download --uri {} --output ./preview_file", uri);
+            info!(
+                "  cloudreve-cli file download --uri {} --output ./preview_file",
+                uri
+            );
         }
     }
 
@@ -77,7 +77,10 @@ async fn preview_json(url: &str) -> Result<()> {
     // Try to format as JSON
     match serde_json::from_str::<serde_json::Value>(&content) {
         Ok(value) => {
-            info!("{}", serde_json::to_string_pretty(&value).unwrap_or_default());
+            info!(
+                "{}",
+                serde_json::to_string_pretty(&value).unwrap_or_default()
+            );
         }
         Err(_) => {
             info!("Content is not valid JSON, displaying as text:");
@@ -91,7 +94,10 @@ async fn preview_json(url: &str) -> Result<()> {
 async fn preview_image(url: &str) -> Result<()> {
     error!("Image preview requires terminal support (e.g., iTerm2, kitty)");
     error!("Consider downloading the file instead:");
-    error!("  cloudreve-cli file download --uri {} --output ./image", url);
+    error!(
+        "  cloudreve-cli file download --uri {} --output ./image",
+        url
+    );
     Err(cloudreve_api::Error::Api {
         code: 400,
         message: "Image preview not supported in this terminal".to_string(),

@@ -1,10 +1,10 @@
+use super::download::handle_download;
+use super::upload::handle_upload;
+use crate::utils::format_bytes;
 use cloudreve_api::{CloudreveAPI, Result, UnifiedClient};
 use log::{error, info, warn};
 use std::fs;
 use std::path::Path;
-use crate::utils::format_bytes;
-use super::upload::handle_upload;
-use super::download::handle_download;
 
 /// Batch upload files
 pub async fn handle_batch_upload(
@@ -19,7 +19,7 @@ pub async fn handle_batch_upload(
     match api.inner() {
         UnifiedClient::V3(_) => {
             return Err(cloudreve_api::Error::InvalidResponse(
-                "Batch upload not available in V3 API".to_string()
+                "Batch upload not available in V3 API".to_string(),
             ));
         }
         UnifiedClient::V4(_) => {}
@@ -35,7 +35,15 @@ pub async fn handle_batch_upload(
         let path_obj = Path::new(&path);
 
         if path_obj.is_file() {
-            match handle_upload(api, path.clone(), dest_path.clone(), overwrite, policy_id.clone()).await {
+            match handle_upload(
+                api,
+                path.clone(),
+                dest_path.clone(),
+                overwrite,
+                policy_id.clone(),
+            )
+            .await
+            {
                 Ok(_) => {
                     uploaded += 1;
                     // Get file size
@@ -50,7 +58,16 @@ pub async fn handle_batch_upload(
                 }
             }
         } else if path_obj.is_dir() && recursive {
-            match upload_directory(api, path_obj, &dest_path, overwrite, policy_id.as_deref(), &mut total_size).await {
+            match upload_directory(
+                api,
+                path_obj,
+                &dest_path,
+                overwrite,
+                policy_id.as_deref(),
+                &mut total_size,
+            )
+            .await
+            {
                 Ok(count) => {
                     uploaded += count;
                 }
@@ -89,14 +106,20 @@ async fn upload_directory(
         let path = entry.path();
 
         if path.is_file() {
-            let file_str = path.to_str().ok_or_else(||
-                cloudreve_api::Error::Api {
-                    code: 400,
-                    message: "Invalid file path".to_string()
-                }
-            )?;
+            let file_str = path.to_str().ok_or_else(|| cloudreve_api::Error::Api {
+                code: 400,
+                message: "Invalid file path".to_string(),
+            })?;
 
-            match handle_upload(api, file_str.to_string(), dest_path.to_string(), overwrite, policy_id.map(|s| s.to_string())).await {
+            match handle_upload(
+                api,
+                file_str.to_string(),
+                dest_path.to_string(),
+                overwrite,
+                policy_id.map(|s| s.to_string()),
+            )
+            .await
+            {
                 Ok(_) => {
                     count += 1;
                     if let Ok(metadata) = path.metadata() {
@@ -109,17 +132,10 @@ async fn upload_directory(
             }
         } else if path.is_dir() {
             // Recursively upload subdirectories
-            let dir_name = path.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("");
+            let dir_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             let new_dest = format!("{}/{}/", dest_path.trim_end_matches('/'), dir_name);
             let upload_future = Box::pin(upload_directory(
-                api,
-                &path,
-                &new_dest,
-                overwrite,
-                policy_id,
-                total_size,
+                api, &path, &new_dest, overwrite, policy_id, total_size,
             ));
             if let Ok(sub_count) = upload_future.await {
                 count += sub_count;
@@ -141,7 +157,7 @@ pub async fn handle_batch_download(
     match api.inner() {
         UnifiedClient::V3(_) => {
             return Err(cloudreve_api::Error::InvalidResponse(
-                "Batch download not available in V3 API".to_string()
+                "Batch download not available in V3 API".to_string(),
             ));
         }
         UnifiedClient::V4(_) => {}
@@ -160,10 +176,10 @@ pub async fn handle_batch_download(
                 // Try to get downloaded file size
                 let filename = uri.split('/').next_back().unwrap_or("file");
                 let output_path = Path::new(&output_dir).join(filename);
-                if output_path.exists() {
-                    if let Ok(metadata) = output_path.metadata() {
-                        total_size += metadata.len();
-                    }
+                if output_path.exists()
+                    && let Ok(metadata) = output_path.metadata()
+                {
+                    total_size += metadata.len();
                 }
                 info!("Downloaded: {}", uri);
             }

@@ -64,33 +64,22 @@ pub enum DavCommands {
     },
 }
 
-pub async fn handle_dav_command(
-    api: &CloudreveAPI,
-    command: DavCommands,
-) -> Result<()> {
+pub async fn handle_dav_command(api: &CloudreveAPI, command: DavCommands) -> Result<()> {
     match command {
-        DavCommands::List { page_size } => {
-            list::handle_list(api, page_size).await
-        }
+        DavCommands::List { page_size } => list::handle_list(api, page_size).await,
         DavCommands::Create {
             uri,
             name,
             readonly,
             proxy,
-        } => {
-            create::handle_create(api, uri, name, readonly, proxy).await
-        }
+        } => create::handle_create(api, uri, name, readonly, proxy).await,
         DavCommands::Update {
             id,
             uri,
             name,
             readonly,
             proxy,
-        } => {
-            update::handle_update(api, id, uri, name, readonly, proxy).await
-        }
-        DavCommands::Delete { id } => {
-            delete::handle_delete(api, id).await
-        }
+        } => update::handle_update(api, id, uri, name, readonly, proxy).await,
+        DavCommands::Delete { id } => delete::handle_delete(api, id).await,
     }
 }

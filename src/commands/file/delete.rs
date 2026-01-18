@@ -2,11 +2,7 @@ use cloudreve_api::{CloudreveAPI, DeleteTarget, Result};
 use log::{error, info};
 use std::io::{self, Write};
 
-pub async fn handle_delete(
-    api: &CloudreveAPI,
-    uris: Vec<String>,
-    force: bool,
-) -> Result<()> {
+pub async fn handle_delete(api: &CloudreveAPI, uris: Vec<String>, force: bool) -> Result<()> {
     if uris.is_empty() {
         error!("No files specified for deletion");
         return Ok(());
@@ -43,7 +39,10 @@ pub async fn handle_delete(
         }
     }
 
-    info!("Delete complete: {} succeeded, {} failed", succeeded, failed);
+    info!(
+        "Delete complete: {} succeeded, {} failed",
+        succeeded, failed
+    );
 
     if failed > 0 {
         error!("Failed to delete {} out of {} files", failed, uris.len());

@@ -1,6 +1,6 @@
-use cloudreve_api::{CloudreveAPI, LoginResponse, Result};
-use crate::context::token_manager::TokenManager;
 use crate::context::token_manager::TokenInfo as CliTokenInfo;
+use crate::context::token_manager::TokenManager;
+use cloudreve_api::{CloudreveAPI, LoginResponse, Result};
 use log::{debug, info};
 use rpassword::read_password;
 use std::io::{self, Write};
@@ -56,11 +56,10 @@ pub async fn handle_auth(
     let (user_id, nickname, cli_token_info) = match &login_response {
         LoginResponse::V3(r) => {
             // V3 uses session cookie - get it from the client
-            let session_cookie = api.get_session_cookie()
-                .unwrap_or_else(|| {
-                    debug!("No session cookie found after V3 login");
-                    String::new()
-                });
+            let session_cookie = api.get_session_cookie().unwrap_or_else(|| {
+                debug!("No session cookie found after V3 login");
+                String::new()
+            });
 
             if session_cookie.is_empty() {
                 debug!("Warning: V3 login returned empty session cookie");
@@ -113,10 +112,7 @@ pub async fn handle_auth(
 
     // Save token to cache
     token_manager.save_token(&cli_token_info)?;
-    info!(
-        "Token saved to cache for user: {}({})",
-        nickname, email
-    );
+    info!("Token saved to cache for user: {}({})", nickname, email);
 
     Ok(())
 }

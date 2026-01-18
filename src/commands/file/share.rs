@@ -29,7 +29,10 @@ pub async fn handle_share(
         info!("Password protected share");
     }
 
-    match api.create_share(&uri, _name.as_deref(), expire, password.as_deref()).await {
+    match api
+        .create_share(&uri, _name.as_deref(), expire, password.as_deref())
+        .await
+    {
         Ok(share_url) => {
             info!("Share link created successfully!");
             info!("URL: {}", share_url);

@@ -2,11 +2,7 @@ use cloudreve_api::api::v4::models::UserSettings;
 use cloudreve_api::{CloudreveClient, Result};
 use log::info;
 
-pub async fn handle_set(
-    client: &CloudreveClient,
-    key: String,
-    value: String,
-) -> Result<()> {
+pub async fn handle_set(client: &CloudreveClient, key: String, value: String) -> Result<()> {
     info!("Updating setting: {} = {}", key, value);
 
     // Get current settings first

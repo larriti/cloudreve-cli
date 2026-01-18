@@ -1,6 +1,6 @@
+use crate::utils::format_bytes;
 use cloudreve_api::{CloudreveAPI, Result};
 use log::info;
-use crate::utils::format_bytes;
 
 pub async fn handle_list(
     api: &CloudreveAPI,

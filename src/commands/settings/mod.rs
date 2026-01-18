@@ -24,16 +24,15 @@ pub enum SettingsCommands {
     },
 }
 
-pub async fn handle_settings_command(
-    api: &CloudreveAPI,
-    command: SettingsCommands,
-) -> Result<()> {
+pub async fn handle_settings_command(api: &CloudreveAPI, command: SettingsCommands) -> Result<()> {
     // For now, use V4 client through inner()
     match api.inner() {
         UnifiedClient::V4(client) => match command {
             SettingsCommands::Get { key } => get::handle_get(client, key).await,
             SettingsCommands::Set { key, value } => set::handle_set(client, key, value).await,
         },
-        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Settings commands not yet supported for V3 API".to_string())),
+        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+            "Settings commands not yet supported for V3 API".to_string(),
+        )),
     }
 }

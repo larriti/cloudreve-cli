@@ -1,9 +1,9 @@
+use crate::utils::format_bytes;
+use chrono::{DateTime, Utc};
 use cloudreve_api::api::v4::models::GetFileInfoRequest;
 use cloudreve_api::{CloudreveClient, Result};
 use log::info;
 use std::fs;
-use crate::utils::format_bytes;
-use chrono::{DateTime, Utc};
 
 pub async fn handle_diff(
     client: &CloudreveClient,
@@ -38,7 +38,11 @@ pub async fn handle_diff(
 
     let size_diff = (local_size as i64 - remote_info.size).abs();
     if local_size as i64 != remote_info.size {
-        info!("  ⚠ Difference: {} ({} bytes)", format_bytes(size_diff), size_diff);
+        info!(
+            "  ⚠ Difference: {} ({} bytes)",
+            format_bytes(size_diff),
+            size_diff
+        );
     } else {
         info!("  ✓ Sizes match");
     }
@@ -46,7 +50,10 @@ pub async fn handle_diff(
 
     // Modification time comparison
     info!("Modification time:");
-    info!("  Local:  {}", local_modified.format("%Y-%m-%d %H:%M:%S UTC"));
+    info!(
+        "  Local:  {}",
+        local_modified.format("%Y-%m-%d %H:%M:%S UTC")
+    );
     let remote_time = parse_remote_time(&remote_info.updated_at);
     info!("  Remote: {}", remote_time.format("%Y-%m-%d %H:%M:%S UTC"));
 

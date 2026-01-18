@@ -64,16 +64,14 @@ pub enum ShareCommands {
     },
 }
 
-pub async fn handle_share_command(
-    api: &CloudreveAPI,
-    command: ShareCommands,
-) -> Result<()> {
+pub async fn handle_share_command(api: &CloudreveAPI, command: ShareCommands) -> Result<()> {
     // For now, use V4 client through inner()
     match api.inner() {
         UnifiedClient::V4(client) => match command {
-            ShareCommands::List { page_size, order_by } => {
-                list::handle_list(client, page_size, order_by).await
-            }
+            ShareCommands::List {
+                page_size,
+                order_by,
+            } => list::handle_list(client, page_size, order_by).await,
             ShareCommands::Create {
                 uri,
                 name,
@@ -88,6 +86,8 @@ pub async fn handle_share_command(
             } => update::handle_update(client, id, name, expire, password).await,
             ShareCommands::Delete { id } => delete::handle_delete(client, id).await,
         },
-        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Share commands not yet supported for V3 API".to_string())),
+        UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+            "Share commands not yet supported for V3 API".to_string(),
+        )),
     }
 }

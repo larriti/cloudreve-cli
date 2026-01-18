@@ -30,7 +30,7 @@ pub async fn handle_create(
     let is_private = Some(password.is_some());
 
     info!("Creating share link for: {}", uri);
-    if is_private.unwrap() {
+    if password.is_some() {
         info!("Password protected share");
     }
 

@@ -3,8 +3,8 @@
 //! Handles authentication token storage, retrieval, and validation.
 //! Stores tokens in a single JSON file in ~/.cache/cloudreve-cli/tokens.json.
 
-use cloudreve_api::error::Error;
 use chrono::{DateTime, Utc};
+use cloudreve_api::error::Error;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -68,11 +68,7 @@ impl TokenManager {
     /// Creates a new token manager with the default cache directory
     pub fn new() -> Result<Self, Error> {
         let cache_dir = dirs::cache_dir()
-            .ok_or_else(|| {
-                Error::Io(std::io::Error::other(
-                    "Could not determine cache directory",
-                ))
-            })?
+            .ok_or_else(|| Error::Io(std::io::Error::other("Could not determine cache directory")))?
             .join("cloudreve-cli");
 
         let tokens_file = cache_dir.join("tokens.json");
@@ -130,7 +126,11 @@ impl TokenManager {
     }
 
     /// Gets token for a specific URL and email combination
-    pub fn get_token_by_url_and_email(&self, url: &str, email: &str) -> Result<Option<TokenInfo>, Error> {
+    pub fn get_token_by_url_and_email(
+        &self,
+        url: &str,
+        email: &str,
+    ) -> Result<Option<TokenInfo>, Error> {
         let tokens = self.load_all_tokens()?;
         // Normalize URL for comparison (trim trailing slashes)
         let normalized_url = url.trim_end_matches('/');

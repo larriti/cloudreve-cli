@@ -8,9 +8,7 @@ pub async fn handle_change_password(
 ) -> Result<()> {
     info!("Changing password...");
 
-    client
-        .change_password(&old_password, &new_password)
-        .await?;
+    client.change_password(&old_password, &new_password).await?;
 
     info!("Password changed successfully");
     Ok(())

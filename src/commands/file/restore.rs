@@ -2,10 +2,7 @@ use cloudreve_api::api::v4::models::RestoreFileRequest;
 use cloudreve_api::{CloudreveClient, Result};
 use log::info;
 
-pub async fn handle_restore(
-    client: &CloudreveClient,
-    uris: Vec<String>,
-) -> Result<()> {
+pub async fn handle_restore(client: &CloudreveClient, uris: Vec<String>) -> Result<()> {
     if uris.is_empty() {
         return Ok(());
     }

@@ -299,17 +299,13 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             path,
             overwrite,
             policy,
-        } => {
-            upload::handle_upload(client, file, path, overwrite, policy).await
-        }
+        } => upload::handle_upload(client, file, path, overwrite, policy).await,
 
         FileCommands::Download {
             uri,
             output,
             expires_in,
-        } => {
-            download::handle_download(client, uri, output, expires_in).await
-        }
+        } => download::handle_download(client, uri, output, expires_in).await,
 
         FileCommands::Delete { uri, force } => delete::handle_delete(client, uri, force).await,
 
@@ -325,15 +321,21 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             // Use V4 client for now (not yet migrated to CloudreveAPI)
             match client.inner() {
                 UnifiedClient::V4(v4_client) => restore::handle_restore(v4_client, uri).await,
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Restore not yet supported for V3 API".to_string())),
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Restore not yet supported for V3 API".to_string(),
+                )),
             }
         }
 
         FileCommands::Permission { command } => {
             // Use V4 client for now (not yet migrated to CloudreveAPI)
             match client.inner() {
-                UnifiedClient::V4(v4_client) => permission::handle_permission(v4_client, command).await,
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Permission not yet supported for V3 API".to_string())),
+                UnifiedClient::V4(v4_client) => {
+                    permission::handle_permission(v4_client, command).await
+                }
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Permission not yet supported for V3 API".to_string(),
+                )),
             }
         }
 
@@ -341,7 +343,9 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             // Use V4 client for now (not yet migrated to CloudreveAPI)
             match client.inner() {
                 UnifiedClient::V4(v4_client) => metadata::handle_metadata(v4_client, command).await,
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Metadata not yet supported for V3 API".to_string())),
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Metadata not yet supported for V3 API".to_string(),
+                )),
             }
         }
 
@@ -358,17 +362,13 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             overwrite,
             policy,
             recursive,
-        } => {
-            batch::handle_batch_upload(client, paths, dest, overwrite, policy, recursive).await
-        }
+        } => batch::handle_batch_upload(client, paths, dest, overwrite, policy, recursive).await,
 
         FileCommands::BatchDownload {
             uris,
             output,
             expires_in,
-        } => {
-            batch::handle_batch_download(client, uris, output, expires_in).await
-        }
+        } => batch::handle_batch_download(client, uris, output, expires_in).await,
 
         FileCommands::Search {
             path,
@@ -395,7 +395,9 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
                     };
                     search::handle_search(v4_client, path, filter, recursive).await
                 }
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Search not yet supported for V3 API".to_string())),
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Search not yet supported for V3 API".to_string(),
+                )),
             }
         }
 
@@ -407,20 +409,24 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
         } => {
             // Use V4 client for now (not yet migrated to CloudreveAPI)
             match client.inner() {
-                UnifiedClient::V4(v4_client) => sync::handle_sync(v4_client, local, remote, direction, dry_run).await,
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Sync not yet supported for V3 API".to_string())),
+                UnifiedClient::V4(v4_client) => {
+                    sync::handle_sync(v4_client, local, remote, direction, dry_run).await
+                }
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Sync not yet supported for V3 API".to_string(),
+                )),
             }
         }
 
-        FileCommands::Preview { uri, type_ } => {
-            preview::handle_preview(client, uri, type_).await
-        }
+        FileCommands::Preview { uri, type_ } => preview::handle_preview(client, uri, type_).await,
 
         FileCommands::Diff { local, remote } => {
             // Use V4 client for now (not yet migrated to CloudreveAPI)
             match client.inner() {
                 UnifiedClient::V4(v4_client) => diff::handle_diff(v4_client, local, remote).await,
-                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse("Diff not yet supported for V3 API".to_string())),
+                UnifiedClient::V3(_) => Err(cloudreve_api::Error::InvalidResponse(
+                    "Diff not yet supported for V3 API".to_string(),
+                )),
             }
         }
     }

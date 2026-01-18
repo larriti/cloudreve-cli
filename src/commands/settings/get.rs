@@ -2,10 +2,7 @@ use cloudreve_api::{CloudreveClient, Result};
 use log::info;
 use serde_json::to_string_pretty;
 
-pub async fn handle_get(
-    client: &CloudreveClient,
-    key: Option<String>,
-) -> Result<()> {
+pub async fn handle_get(client: &CloudreveClient, key: Option<String>) -> Result<()> {
     info!("Getting user settings...");
 
     let settings = client.get_settings().await?;

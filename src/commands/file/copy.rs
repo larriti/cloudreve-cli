@@ -1,12 +1,8 @@
 use cloudreve_api::{CloudreveAPI, Result};
-use log::info;
 use log::error;
+use log::info;
 
-pub async fn handle_copy(
-    api: &CloudreveAPI,
-    src: Vec<String>,
-    dest: String,
-) -> Result<()> {
+pub async fn handle_copy(api: &CloudreveAPI, src: Vec<String>, dest: String) -> Result<()> {
     info!("Copying {} file(s) to {}", src.len(), dest);
 
     let mut succeeded = 0;

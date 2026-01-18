@@ -1,6 +1,6 @@
-use cloudreve_api::{CloudreveAPI, Result, UnifiedClient, ApiVersion};
-use log::{info, warn, debug};
-use super::token_manager::{TokenManager, TokenInfo as CliTokenInfo};
+use super::token_manager::{TokenInfo as CliTokenInfo, TokenManager};
+use cloudreve_api::{ApiVersion, CloudreveAPI, Result, UnifiedClient};
+use log::{debug, info, warn};
 
 /// Client initialization configuration
 pub struct ClientConfig {
@@ -12,7 +12,7 @@ pub struct ClientConfig {
 /// Client initialization result
 pub struct ClientContext {
     pub api: Option<CloudreveAPI>,
-    pub token_manager: TokenManager
+    pub token_manager: TokenManager,
 }
 
 /// Initializes client and handles token management
@@ -26,9 +26,10 @@ pub async fn initialize_client(config: ClientConfig) -> Result<ClientContext> {
 
         let token_result = load_and_refresh_token(
             &token_manager,
-            config.url.as_ref().map(|s| s.as_str()),
-            config.email.as_ref().map(|s| s.as_str())
-        ).await?;
+            config.url.as_deref(),
+            config.email.as_deref(),
+        )
+        .await?;
 
         match token_result {
             Some((token_info, api)) => {
@@ -42,18 +43,13 @@ pub async fn initialize_client(config: ClientConfig) -> Result<ClientContext> {
         }
     } else {
         // Token provided via command line
-        let url = config
-            .url
-            .expect("URL is required when token is provided");
+        let url = config.url.expect("URL is required when token is provided");
         let mut api = CloudreveAPI::new(&url).await?;
         api.set_token(&config.token.unwrap())?;
         Some(api)
     };
 
-    Ok(ClientContext {
-        api,
-        token_manager
-    })
+    Ok(ClientContext { api, token_manager })
 }
 
 /// Attempts to load and refresh a cached token if needed
@@ -70,7 +66,10 @@ async fn load_and_refresh_token(
             if let Some(token) = result {
                 token
             } else {
-                info!("No cached token found for URL: {} and email: {}", url, email);
+                info!(
+                    "No cached token found for URL: {} and email: {}",
+                    url, email
+                );
                 return Ok(None);
             }
         }
@@ -106,7 +105,10 @@ async fn load_and_refresh_token(
         }
     };
 
-    info!("Found cached token for user: {} (API version: {})", token_info.email, token_info.api_version);
+    info!(
+        "Found cached token for user: {} (API version: {})",
+        token_info.email, token_info.api_version
+    );
     debug!("token: {}", token_info.access_token);
     let cached_url = token_info.url.clone();
 
@@ -115,18 +117,22 @@ async fn load_and_refresh_token(
         let normalized_provided = provided_url.trim_end_matches('/');
         let normalized_cached = cached_url.trim_end_matches('/');
         if normalized_provided != normalized_cached {
-            info!("Provided URL ({}) differs from cached token URL ({}), ignoring cache",
-                provided_url, cached_url);
+            info!(
+                "Provided URL ({}) differs from cached token URL ({}), ignoring cache",
+                provided_url, cached_url
+            );
             return Ok(None);
         }
     }
 
     // Parse the API version from cache
-    let api_version = ApiVersion::from_str(&token_info.api_version)
-        .unwrap_or(ApiVersion::V4); // Default to V4 for backward compatibility
+    let api_version = ApiVersion::from_str(&token_info.api_version).unwrap_or(ApiVersion::V4); // Default to V4 for backward compatibility
 
     // Create API client with known version (no probing needed!)
-    info!("Using cached API version: {:?} (skipping version detection)", api_version);
+    info!(
+        "Using cached API version: {:?} (skipping version detection)",
+        api_version
+    );
     let mut api = CloudreveAPI::with_version(&cached_url, api_version)?;
 
     // V3 tokens don't have expiration info - use directly and let API errors handle auth

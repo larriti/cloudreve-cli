@@ -11,13 +11,8 @@ pub async fn handle_update(
 ) -> Result<()> {
     info!("Updating WebDAV account {}...", id);
 
-    api.update_dav_account(
-        &id,
-        uri.as_deref(),
-        name.as_deref(),
-        readonly,
-        proxy,
-    ).await?;
+    api.update_dav_account(&id, uri.as_deref(), name.as_deref(), readonly, proxy)
+        .await?;
 
     info!("WebDAV account updated successfully!");
     info!("  ID:       {}", id);

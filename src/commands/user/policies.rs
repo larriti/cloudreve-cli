@@ -24,7 +24,10 @@ pub async fn handle_policies(client: &CloudreveClient) -> Result<()> {
             }
 
             info!("Use the policy ID with --policy parameter when uploading files:");
-            info!("  Example: cloudreve-cli file upload --file <file> --path <path> --policy {}", policies[0].id);
+            info!(
+                "  Example: cloudreve-cli file upload --file <file> --path <path> --policy {}",
+                policies[0].id
+            );
             Ok(())
         }
         Err(e) => {
