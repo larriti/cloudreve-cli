@@ -15,7 +15,17 @@ pub async fn handle_list(
     let file_list = api.list_files(&path, page, Some(page_size)).await?;
 
     // Display parent directory information
-    info!("📂 Parent: {}", file_list.parent_name());
+    info!("📂 Parent: {} (ID: {})", file_list.parent_name(), file_list.parent_id());
+    let parent_path = file_list.parent_path();
+    if !parent_path.is_empty() {
+        info!("   URI: {}", parent_path);
+    }
+
+    // Display storage policy if available (V4 only)
+    if let Some(policy_name) = file_list.storage_policy_name() {
+        let policy_id = file_list.storage_policy_id().unwrap_or_default();
+        info!("   Storage Policy: {} (ID: {})", policy_name, policy_id);
+    }
 
     // Display files and folders
     info!("");

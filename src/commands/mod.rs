@@ -7,3 +7,4 @@ pub mod settings;
 pub mod share;
 pub mod user;
 pub mod version;
+pub mod workflow;

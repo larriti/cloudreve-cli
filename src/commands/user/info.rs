@@ -1,13 +1,32 @@
-use crate::context::TokenManager;
-use cloudreve_api::{CloudreveAPI, Result};
+use cloudreve_api::{CloudreveAPI, Result, UnifiedClient, UserInfo};
 use log::info;
 
-pub async fn handle_info(api: &CloudreveAPI, _token_manager: &TokenManager) -> Result<()> {
+pub async fn handle_info(api: &CloudreveAPI, token_manager: &crate::context::TokenManager) -> Result<()> {
     info!("Getting user information...");
 
-    // For V3, we can get user info directly from CloudreveAPI
-    // For V4, we may need user_id from cache
-    let user = api.get_user_info().await?;
+    let user = match api.inner() {
+        UnifiedClient::V3(_) => {
+            // V3: Get user info from API
+            api.get_user_info().await?
+        }
+        UnifiedClient::V4(client) => {
+            // V4: Get user_id from token and call user info endpoint
+            let token_info = token_manager
+                .get_token_by_url(api.base_url())?
+                .ok_or_else(|| cloudreve_api::Error::InvalidResponse(
+                    "Token expired or invalid.".to_string()
+                ))?;
+
+            let v4_user = client.get_user_info(&token_info.user_id).await?;
+            UserInfo {
+                id: v4_user.id,
+                email: v4_user.email,
+                nickname: v4_user.nickname,
+                group: v4_user.group.map(|g| g.name),
+                status: v4_user.status,
+            }
+        }
+    };
 
     info!("User information:");
     info!("  ID: {}", user.id);

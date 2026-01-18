@@ -132,6 +132,12 @@ enum Commands {
         command: commands::dav::DavCommands,
     },
 
+    /// Workflow and task management
+    Workflow {
+        #[clap(subcommand)]
+        command: commands::workflow::WorkflowCommands,
+    },
+
     /// Generate shell completion script
     Completions {
         /// Shell type (bash, zsh, fish, elvish, powershell)
@@ -216,6 +222,9 @@ async fn main() -> Result<()> {
         }
         Commands::Dav { command } => {
             commands::dav::handle_dav_command(&api, command).await?;
+        }
+        Commands::Workflow { command } => {
+            commands::workflow::handle_workflow_command(&api, command).await?;
         }
         Commands::Completions { shell } => {
             generate_completions(&shell);
