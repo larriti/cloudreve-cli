@@ -1,6 +1,6 @@
 [package]
 name = "cloudreve-cli"
-version = "0.3.2"
+version = "0.3.3"
 edition.workspace = true
 description = "Command-line interface for Cloudreve API"
 license.workspace = true

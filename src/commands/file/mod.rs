@@ -27,7 +27,7 @@ pub enum FileCommands {
     /// List files in a directory
     List {
         /// Path to list files in
-        #[clap(long, default_value = "/")]
+        #[clap(short, long, default_value = "/")]
         path: String,
 
         /// Page number
@@ -41,23 +41,23 @@ pub enum FileCommands {
 
     /// Get file information
     Info {
-        /// File URI
-        #[clap(long)]
-        uri: String,
+        /// File path
+        #[clap(short, long)]
+        path: String,
 
         /// Include extended information
-        #[clap(long)]
+        #[clap(short, long)]
         extended: bool,
     },
 
     /// Upload a file
     Upload {
         /// Local file path
-        #[clap(long)]
+        #[clap(short, long)]
         file: String,
 
         /// Destination path
-        #[clap(long, default_value = "/")]
+        #[clap(short, long, default_value = "/")]
         path: String,
 
         /// Overwrite if file exists
@@ -71,12 +71,12 @@ pub enum FileCommands {
 
     /// Download a file
     Download {
-        /// File URI
-        #[clap(long)]
-        uri: String,
+        /// File path
+        #[clap(short, long)]
+        path: String,
 
         /// Local destination path
-        #[clap(long)]
+        #[clap(short, long)]
         output: String,
 
         /// Download URL expiration time in seconds
@@ -86,9 +86,9 @@ pub enum FileCommands {
 
     /// Delete files
     Delete {
-        /// File URI(s) to delete
-        #[clap(long, required = true)]
-        uri: Vec<String>,
+        /// File path(s) to delete
+        #[clap(short, long, required = true)]
+        path: Vec<String>,
 
         /// Skip confirmation prompt
         #[clap(long, short = 'f')]
@@ -97,41 +97,41 @@ pub enum FileCommands {
 
     /// Rename a file
     Rename {
-        /// Source file URI
-        #[clap(long)]
+        /// Source file path
+        #[clap(short, long)]
         src: String,
 
         /// New name
-        #[clap(long)]
+        #[clap(short, long)]
         name: String,
     },
 
     /// Move files
     Move {
-        /// Source file URI(s)
-        #[clap(long, required = true)]
+        /// Source file path(s)
+        #[clap(short, long, required = true)]
         src: Vec<String>,
 
-        /// Destination directory URI
-        #[clap(long, required = true)]
+        /// Destination directory path
+        #[clap(short, long, required = true)]
         dest: String,
     },
 
     /// Copy files
     Copy {
-        /// Source file URI(s)
-        #[clap(long, required = true)]
+        /// Source file path(s)
+        #[clap(short, long, required = true)]
         src: Vec<String>,
 
-        /// Destination directory URI
-        #[clap(long, required = true)]
+        /// Destination directory path
+        #[clap(short, long, required = true)]
         dest: String,
     },
 
     /// Create a directory
     Mkdir {
         /// Directory path
-        #[clap(long, required = true)]
+        #[clap(short, long, required = true)]
         path: String,
     },
 
@@ -156,12 +156,12 @@ pub enum FileCommands {
 
     /// Create a share link
     Share {
-        /// File URI to share
-        #[clap(long)]
-        uri: String,
+        /// File path to share
+        #[clap(short, long)]
+        path: String,
 
         /// Share link name
-        #[clap(long)]
+        #[clap(short, long)]
         name: Option<String>,
 
         /// Expiration time in seconds
@@ -169,18 +169,18 @@ pub enum FileCommands {
         expire: Option<u32>,
 
         /// Password for the share link
-        #[clap(long)]
+        #[clap(short('P'), long)]
         password: Option<String>,
     },
 
     /// Batch upload files
     BatchUpload {
         /// Local file(s) or directory path(s) (can be specified multiple times)
-        #[clap(long, required = true, num_args = 1..)]
+        #[clap(short, long, required = true, num_args = 1..)]
         paths: Vec<String>,
 
         /// Destination path
-        #[clap(long, default_value = "/")]
+        #[clap(short, long, default_value = "/")]
         dest: String,
 
         /// Overwrite if exists
@@ -188,22 +188,22 @@ pub enum FileCommands {
         overwrite: bool,
 
         /// Storage policy ID
-        #[clap(long)]
+        #[clap(short, long)]
         policy: Option<String>,
 
         /// Recursive upload for directories
-        #[clap(long)]
+        #[clap(short, long)]
         recursive: bool,
     },
 
     /// Batch download files
     BatchDownload {
         /// File URI(s) to download (can be specified multiple times)
-        #[clap(long, required = true, num_args = 1..)]
-        uris: Vec<String>,
+        #[clap(short, short, long, required = true, num_args = 1..)]
+        paths: Vec<String>,
 
         /// Local output directory
-        #[clap(long, default_value = ".")]
+        #[clap(short, long, default_value = ".")]
         output: String,
 
         /// URL expiration time in seconds
@@ -214,15 +214,15 @@ pub enum FileCommands {
     /// Search files
     Search {
         /// Path to search in
-        #[clap(long, default_value = "/")]
+        #[clap(short, long, default_value = "/")]
         path: String,
 
         /// Name pattern (case-insensitive substring)
-        #[clap(long)]
+        #[clap(short, long)]
         name: Option<String>,
 
         /// File type (file or folder)
-        #[clap(long)]
+        #[clap(short, long)]
         type_: Option<String>,
 
         /// Minimum size in bytes
@@ -234,11 +234,11 @@ pub enum FileCommands {
         max_size: Option<i64>,
 
         /// File extension (e.g., "txt", "jpg")
-        #[clap(long)]
+        #[clap(short, long)]
         extension: Option<String>,
 
         /// Recursive search
-        #[clap(long)]
+        #[clap(short, long)]
         recursive: bool,
     },
 
@@ -292,7 +292,7 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             page_size,
         } => list::handle_list(client, path, page, page_size).await,
 
-        FileCommands::Info { uri, extended } => info::handle_info(client, uri, extended).await,
+        FileCommands::Info { path, extended } => info::handle_info(client, path, extended).await,
 
         FileCommands::Upload {
             file,
@@ -302,12 +302,12 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
         } => upload::handle_upload(client, file, path, overwrite, policy).await,
 
         FileCommands::Download {
-            uri,
+            path,
             output,
             expires_in,
-        } => download::handle_download(client, uri, output, expires_in).await,
+        } => download::handle_download(client, path, output, expires_in).await,
 
-        FileCommands::Delete { uri, force } => delete::handle_delete(client, uri, force).await,
+        FileCommands::Delete { path, force } => delete::handle_delete(client, path, force).await,
 
         FileCommands::Rename { src, name } => rename::handle_rename(client, src, name).await,
 
@@ -350,11 +350,11 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
         }
 
         FileCommands::Share {
-            uri,
+            path,
             name,
             expire,
             password,
-        } => share::handle_share(client, uri, name, expire, password).await,
+        } => share::handle_share(client, path, name, expire, password).await,
 
         FileCommands::BatchUpload {
             paths,
@@ -365,10 +365,10 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
         } => batch::handle_batch_upload(client, paths, dest, overwrite, policy, recursive).await,
 
         FileCommands::BatchDownload {
-            uris,
+            paths,
             output,
             expires_in,
-        } => batch::handle_batch_download(client, uris, output, expires_in).await,
+        } => batch::handle_batch_download(client, paths, output, expires_in).await,
 
         FileCommands::Search {
             path,
