@@ -188,7 +188,7 @@ pub enum FileCommands {
         overwrite: bool,
 
         /// Storage policy ID
-        #[clap(short, long)]
+        #[clap(short = 'P', long)]
         policy: Option<String>,
 
         /// Recursive upload for directories

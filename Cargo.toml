@@ -1,6 +1,6 @@
 [package]
 name = "cloudreve-cli"
-version = "0.4.0"
+version = "0.4.1"
 edition.workspace = true
 description = "Command-line interface for Cloudreve API"
 license.workspace = true
@@ -32,3 +32,25 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
+
+[dev-dependencies]
+# CLI 进程测试
+assert_cmd = "2.0"
+predicates = "3.1"
+assert_fs = "1.1"
+
+# 异步测试运行时
+tokio = { workspace = true, features = ["test-util"] }
+
+# 配置和序列化（使用与主依赖相同的版本）
+toml = "0.9"
+
+# 日志和测试辅助
+env_logger = "0.11"
+
+# 文件和临时文件处理
+tempfile = "3.14"
+regex = "1.11"
+
+# 测试工具
+serial_test = "3.2"
