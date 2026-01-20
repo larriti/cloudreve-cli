@@ -17,25 +17,20 @@ async fn run_cli_integration_tests() {
         .map(|v| v == "1" || v.to_lowercase() == "true")
         .unwrap_or(false);
 
-    let config_file_exists =
-        std::path::Path::new("cloudreve-api/tests/config/test_config.toml").exists();
-
-    if !integration_enabled && !config_file_exists {
-        println!("CLI 集成测试已跳过（未配置 INTEGRATION_TEST_ENABLED=1 且配置文件不存在）");
-        println!("要运行集成测试，请:");
-        println!("  1. 设置环境变量: INTEGRATION_TEST_ENABLED=1");
-        println!("  2. 或创建配置文件: cloudreve-api/tests/config/test_config.toml");
-        return;
-    }
-
-    println!("\n╔══════════════════════════════════════════════════════════╗");
-    println!("║     Cloudreve CLI 端到端测试套件                         ║");
-    println!("╚══════════════════════════════════════════════════════════╝");
-
-    // 加载测试配置（复用 API 测试配置）
+    // 尝试加载配置，如果失败且未启用集成测试则跳过
     let config = match CliTestConfig::load() {
         Ok(cfg) => cfg,
         Err(e) => {
+            if !integration_enabled {
+                println!(
+                    "CLI 集成测试已跳过（未配置 INTEGRATION_TEST_ENABLED=1 且配置文件不存在）"
+                );
+                println!("要运行集成测试，请:");
+                println!("  1. 设置环境变量: INTEGRATION_TEST_ENABLED=1");
+                println!("  2. 或创建配置文件: cloudreve-api/tests/config/test_config.toml");
+                println!("\n提示: {}", e);
+                return;
+            }
             println!("\n错误: {}", e);
             println!("\n请按以下步骤配置测试环境:");
             println!(
@@ -46,6 +41,10 @@ async fn run_cli_integration_tests() {
             panic!("配置文件未找到或无效");
         }
     };
+
+    println!("\n╔══════════════════════════════════════════════════════════╗");
+    println!("║     Cloudreve CLI 端到端测试套件                         ║");
+    println!("╚══════════════════════════════════════════════════════════╝");
 
     println!("配置加载成功:");
     if config.v3_enabled() {
