@@ -12,6 +12,22 @@ use modules::other_tests;
 
 #[tokio::test]
 async fn run_cli_integration_tests() {
+    // 检查是否启用集成测试（通过环境变量或配置文件存在性）
+    let integration_enabled = std::env::var("INTEGRATION_TEST_ENABLED")
+        .map(|v| v == "1" || v.to_lowercase() == "true")
+        .unwrap_or(false);
+
+    let config_file_exists =
+        std::path::Path::new("cloudreve-api/tests/config/test_config.toml").exists();
+
+    if !integration_enabled && !config_file_exists {
+        println!("CLI 集成测试已跳过（未配置 INTEGRATION_TEST_ENABLED=1 且配置文件不存在）");
+        println!("要运行集成测试，请:");
+        println!("  1. 设置环境变量: INTEGRATION_TEST_ENABLED=1");
+        println!("  2. 或创建配置文件: cloudreve-api/tests/config/test_config.toml");
+        return;
+    }
+
     println!("\n╔══════════════════════════════════════════════════════════╗");
     println!("║     Cloudreve CLI 端到端测试套件                         ║");
     println!("╚══════════════════════════════════════════════════════════╝");
