@@ -1,4 +1,4 @@
-use cloudreve_api::{CloudreveAPI, Result};
+use cloudreve_api::{CloudreveAPI, Error, Result};
 use log::error;
 use log::info;
 
@@ -25,6 +25,11 @@ pub async fn handle_copy(api: &CloudreveAPI, src: Vec<String>, dest: String) -> 
 
     if failed > 0 {
         error!("Failed to copy {} out of {} files", failed, src.len());
+        return Err(Error::InvalidResponse(format!(
+            "Failed to copy {} out of {} files",
+            failed,
+            src.len()
+        )));
     }
 
     Ok(())

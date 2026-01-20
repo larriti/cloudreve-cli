@@ -31,7 +31,7 @@ pub enum FileCommands {
         path: String,
 
         /// Page number
-        #[clap(long, default_value = "0")]
+        #[clap(long)]
         page: Option<u32>,
 
         /// Items per page

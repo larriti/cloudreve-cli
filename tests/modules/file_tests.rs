@@ -481,7 +481,13 @@ async fn test_file_copy(
         &test_dir,
     ]);
 
-    if result.success {
+    // 验证：检查目标目录中是否有复制的文件
+    let list_result = runner.run(&["file", "list", "--path", &test_dir]);
+
+    let copy_verified = list_result.success && list_result.stdout.contains(filename);
+    let success = result.success && copy_verified;
+
+    if success {
         let _ = runner.run(&[
             "file",
             "delete",
@@ -490,7 +496,7 @@ async fn test_file_copy(
             "--force",
         ]);
         let _ = runner.run(&["file", "delete", "--path", &test_dir, "--force"]);
-        println!("  [File] ✓ copy 命令成功");
+        println!("  [File] ✓ copy 命令成功（已验证文件被复制）");
         (
             "file copy".to_string(),
             format!("--src /{} --dest {}", filename, test_dir),
@@ -499,13 +505,34 @@ async fn test_file_copy(
             String::new(),
         )
     } else {
-        println!("  [File] ✗ copy 命令失败: {}", result.stderr);
+        // 清理资源
+        let _ = runner.run(&[
+            "file",
+            "delete",
+            "--path",
+            &format!("/{}", filename),
+            "--force",
+        ]);
+        let _ = runner.run(&["file", "delete", "--path", &test_dir, "--force"]);
+        println!(
+            "  [File] ✗ copy 命令失败: {} (验证: {})",
+            result.stderr,
+            if copy_verified {
+                "通过"
+            } else {
+                "失败 - 目标目录中没有文件"
+            }
+        );
         (
             "file copy".to_string(),
             format!("--src /{} --dest {}", filename, test_dir),
             version.to_string(),
             result.exit_code,
-            result.stderr.clone(),
+            if copy_verified {
+                result.stderr.clone()
+            } else {
+                format!("{} (验证失败: 目标目录中没有文件)", result.stderr)
+            },
         )
     }
 }
