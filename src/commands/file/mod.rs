@@ -84,15 +84,20 @@ pub enum FileCommands {
         expires_in: Option<u32>,
     },
 
-    /// Delete files
+    /// Delete files or folders
     Delete {
-        /// File path(s) to delete
-        #[clap(short, long, required = true)]
+        /// File/Folder path(s) to delete
+        /// Append /* to clear folder contents while keeping the folder
+        #[clap(short, long, required = true, num_args = 1..)]
         path: Vec<String>,
 
         /// Skip confirmation prompt
         #[clap(long, short = 'f')]
         force: bool,
+
+        /// Recursive deletion for directories
+        #[clap(short, long)]
+        recursive: bool,
     },
 
     /// Rename a file
@@ -307,7 +312,11 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             expires_in,
         } => download::handle_download(client, path, output, expires_in).await,
 
-        FileCommands::Delete { path, force } => delete::handle_delete(client, path, force).await,
+        FileCommands::Delete {
+            path,
+            force,
+            recursive,
+        } => delete::handle_delete(client, path, force, recursive).await,
 
         FileCommands::Rename { src, name } => rename::handle_rename(client, src, name).await,
 

@@ -1,16 +1,59 @@
-use cloudreve_api::{CloudreveAPI, DeleteTarget, Result};
+use cloudreve_api::{CloudreveAPI, Result};
 use log::{error, info};
 use std::io::{self, Write};
 
-pub async fn handle_delete(api: &CloudreveAPI, uris: Vec<String>, force: bool) -> Result<()> {
+pub async fn handle_delete(
+    api: &CloudreveAPI,
+    uris: Vec<String>,
+    force: bool,
+    _recursive: bool,
+) -> Result<()> {
     if uris.is_empty() {
         error!("No files specified for deletion");
         return Ok(());
     }
 
-    // Confirmation prompt
+    // Parse paths and expand wildcard patterns
+    let mut paths_to_delete: Vec<String> = Vec::new();
+
+    for uri in &uris {
+        if uri.ends_with("/*") {
+            // Wildcard pattern: clear folder contents
+            let base_path = uri.trim_end_matches("/*");
+            let normalized = if base_path.is_empty() { "/" } else { base_path };
+
+            // List all items in the folder
+            match api.list_files(normalized, None, None).await {
+                Ok(file_list) => {
+                    for item in file_list.items() {
+                        let full_path =
+                            format!("{}/{}", normalized.trim_end_matches('/'), item.name);
+                        paths_to_delete.push(full_path);
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to list directory {}: {}", normalized, e);
+                }
+            }
+        } else {
+            // Regular path
+            paths_to_delete.push(uri.clone());
+        }
+    }
+
+    if paths_to_delete.is_empty() {
+        info!("No files to delete");
+        return Ok(());
+    }
+
+    // Confirmation
     if !force {
-        print!("Delete {} file(s)? [y/N]: ", uris.len());
+        println!("Delete operation:");
+        println!("  Items: {}", paths_to_delete.len());
+        for path in &paths_to_delete {
+            println!("  - {}", path);
+        }
+        print!("Proceed? [y/N]: ");
         io::stdout().flush()?;
 
         let mut input = String::new();
@@ -22,30 +65,28 @@ pub async fn handle_delete(api: &CloudreveAPI, uris: Vec<String>, force: bool) -
         }
     }
 
-    let mut succeeded = 0;
-    let mut failed = 0;
+    // Convert to slice for batch_delete
+    let paths_refs: Vec<&str> = paths_to_delete.iter().map(|s| s.as_str()).collect();
 
-    for uri in &uris {
-        let target: DeleteTarget = uri.clone().into();
-        match api.delete(target).await {
-            Ok(_) => {
-                info!("Deleted: {}", uri);
-                succeeded += 1;
+    match api.batch_delete(&paths_refs).await {
+        Ok(result) => {
+            info!(
+                "Delete complete: {} deleted, {} failed",
+                result.deleted, result.failed
+            );
+
+            for (path, error) in &result.errors {
+                error!("Failed to delete {}: {}", path, error);
             }
-            Err(e) => {
-                error!("Failed to delete {}: {}", uri, e);
-                failed += 1;
+
+            if result.failed > 0 {
+                error!("Failed to delete {} items", result.failed);
             }
         }
-    }
-
-    info!(
-        "Delete complete: {} succeeded, {} failed",
-        succeeded, failed
-    );
-
-    if failed > 0 {
-        error!("Failed to delete {} out of {} files", failed, uris.len());
+        Err(e) => {
+            error!("Delete operation failed: {}", e);
+            return Err(e);
+        }
     }
 
     Ok(())
