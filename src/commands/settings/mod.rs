@@ -8,18 +8,18 @@ pub enum SettingsCommands {
     /// Get settings
     Get {
         /// Setting key (optional, get all if not specified)
-        #[clap(long)]
+        #[clap(short, long)]
         key: Option<String>,
     },
 
     /// Set a setting value
     Set {
         /// Setting key
-        #[clap(long)]
+        #[clap(short, long)]
         key: String,
 
         /// Setting value (JSON)
-        #[clap(long)]
+        #[clap(short, long)]
         value: String,
     },
 }

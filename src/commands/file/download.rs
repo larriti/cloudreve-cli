@@ -4,8 +4,12 @@ use log::{error, info};
 use reqwest::Client;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 
-pub async fn handle_download(
+use crate::utils::glob;
+
+/// Download a single file
+pub async fn download_single_file(
     api: &CloudreveAPI,
     uri: String,
     output: String,
@@ -67,6 +71,77 @@ pub async fn handle_download(
 
     info!("Saved to: {}", output_path);
     info!("Size: {}", format_bytes(bytes.len() as i64));
+
+    Ok(())
+}
+
+/// Handle download with support for multiple files and concurrency
+pub async fn handle_download(
+    api: &CloudreveAPI,
+    files: Vec<String>,
+    output: String,
+    expires_in: Option<u32>,
+    concurrency: usize,
+    _batch: bool,
+) -> Result<()> {
+    if files.is_empty() {
+        return Err(cloudreve_api::Error::InvalidResponse(
+            "No files to download".to_string(),
+        ));
+    }
+
+    // Expand glob patterns for remote files
+    let expanded_files = glob::expand_remote_patterns(api, &files, false).await?;
+
+    if expanded_files.is_empty() {
+        info!("No files matched the specified pattern(s)");
+        return Ok(());
+    }
+
+    info!("Starting download of {} item(s)", expanded_files.len());
+
+    // Use concurrency control to download
+    let tasks: Vec<_> = expanded_files
+        .into_iter()
+        .map(|uri| {
+            let api = api.clone();
+            let output = output.clone();
+            let file_name = Path::new(&uri)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            (
+                file_name.clone(),
+                async move {
+                    download_single_file(&api, uri, output, expires_in).await
+                },
+            )
+        })
+        .collect();
+
+    let results =
+        crate::utils::concurrency::execute_with_concurrency(tasks, concurrency).await;
+
+    // Statistics
+    let mut success = 0;
+    let mut failed = 0;
+    for (name, result) in results {
+        match result {
+            Ok(_) => {
+                success += 1;
+                info!("✓ {}", name);
+            }
+            Err(e) => {
+                failed += 1;
+                error!("✗ {}: {}", name, e);
+            }
+        }
+    }
+
+    info!("");
+    info!("Download complete: {} succeeded, {} failed", success, failed);
 
     Ok(())
 }

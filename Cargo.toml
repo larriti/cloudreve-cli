@@ -1,6 +1,6 @@
 [package]
 name = "cloudreve-cli"
-version = "0.4.2"
+version = "0.5.0"
 edition.workspace = true
 description = "Command-line interface for Cloudreve API"
 license.workspace = true
@@ -14,7 +14,7 @@ name = "cloudreve-cli"
 path = "src/main.rs"
 
 [dependencies]
-cloudreve-api = "0.4"
+cloudreve-api = "0.5"
 
 clap = { version = "4.0", features = ["derive", "cargo"] }
 clap_complete = "4.5"
@@ -32,6 +32,11 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
+
+# Glob pattern support
+glob = "0.3"
+# Async concurrency control
+futures = "0.3"
 
 [dev-dependencies]
 # CLI 进程测试

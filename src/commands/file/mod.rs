@@ -1,6 +1,5 @@
 // 文件命令模块的导出文件
 
-pub mod batch;
 pub mod copy;
 pub mod delete;
 pub mod diff;
@@ -52,12 +51,12 @@ pub enum FileCommands {
 
     /// Upload a file
     Upload {
-        /// Local file path
-        #[clap(short, long)]
-        file: String,
+        /// Local file path(s) - supports multiple files and glob patterns
+        #[clap(short, long, required = true, num_args = 1..)]
+        file: Vec<String>,
 
         /// Destination path
-        #[clap(short, long, default_value = "/")]
+        #[clap(short = 'p', long, default_value = "/")]
         path: String,
 
         /// Overwrite if file exists
@@ -67,21 +66,37 @@ pub enum FileCommands {
         /// Storage policy ID (uses first available if not specified)
         #[clap(long)]
         policy: Option<String>,
+
+        /// Recursive upload for directories
+        #[clap(short, long)]
+        recursive: bool,
+
+        /// Concurrent upload limit (default: 5, 0 = unlimited)
+        #[clap(short, long, default_value = "5")]
+        concurrency: usize,
     },
 
     /// Download a file
     Download {
-        /// File path
-        #[clap(short, long)]
-        path: String,
+        /// Remote file path(s) - supports multiple files and glob patterns (e.g., "*.txt", "/docs/*.pdf")
+        #[clap(short = 'f', long, required = true, num_args = 1..)]
+        file: Vec<String>,
 
-        /// Local destination path
-        #[clap(short, long)]
+        /// Local output directory
+        #[clap(short = 'p', long, default_value = ".")]
         output: String,
 
         /// Download URL expiration time in seconds
         #[clap(long)]
         expires_in: Option<u32>,
+
+        /// Concurrent download limit (default: 5, 0 = unlimited)
+        #[clap(short, long, default_value = "5")]
+        concurrency: usize,
+
+        /// Use V4 batch download (create archive)
+        #[clap(short, long)]
+        batch: bool,
     },
 
     /// Delete files or folders
@@ -178,44 +193,6 @@ pub enum FileCommands {
         password: Option<String>,
     },
 
-    /// Batch upload files
-    BatchUpload {
-        /// Local file(s) or directory path(s) (can be specified multiple times)
-        #[clap(short, long, required = true, num_args = 1..)]
-        paths: Vec<String>,
-
-        /// Destination path
-        #[clap(short, long, default_value = "/")]
-        dest: String,
-
-        /// Overwrite if exists
-        #[clap(long)]
-        overwrite: bool,
-
-        /// Storage policy ID
-        #[clap(short = 'P', long)]
-        policy: Option<String>,
-
-        /// Recursive upload for directories
-        #[clap(short, long)]
-        recursive: bool,
-    },
-
-    /// Batch download files
-    BatchDownload {
-        /// File URI(s) to download (can be specified multiple times)
-        #[clap(short, short, long, required = true, num_args = 1..)]
-        paths: Vec<String>,
-
-        /// Local output directory
-        #[clap(short, long, default_value = ".")]
-        output: String,
-
-        /// URL expiration time in seconds
-        #[clap(long)]
-        expires_in: Option<u32>,
-    },
-
     /// Search files
     Search {
         /// Path to search in
@@ -304,13 +281,22 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             path,
             overwrite,
             policy,
-        } => upload::handle_upload(client, file, path, overwrite, policy).await,
+            recursive,
+            concurrency,
+        } => {
+            upload::handle_upload(client, file, path, overwrite, policy, recursive, concurrency)
+                .await
+        }
 
         FileCommands::Download {
-            path,
+            file,
             output,
             expires_in,
-        } => download::handle_download(client, path, output, expires_in).await,
+            concurrency,
+            batch,
+        } => {
+            download::handle_download(client, file, output, expires_in, concurrency, batch).await
+        }
 
         FileCommands::Delete {
             path,
@@ -364,20 +350,6 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             expire,
             password,
         } => share::handle_share(client, path, name, expire, password).await,
-
-        FileCommands::BatchUpload {
-            paths,
-            dest,
-            overwrite,
-            policy,
-            recursive,
-        } => batch::handle_batch_upload(client, paths, dest, overwrite, policy, recursive).await,
-
-        FileCommands::BatchDownload {
-            paths,
-            output,
-            expires_in,
-        } => batch::handle_batch_download(client, paths, output, expires_in).await,
 
         FileCommands::Search {
             path,

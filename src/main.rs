@@ -126,6 +126,12 @@ enum Commands {
         command: commands::settings::SettingsCommands,
     },
 
+    /// Site configuration management
+    Site {
+        #[clap(subcommand)]
+        command: commands::site::SiteCommands,
+    },
+
     /// WebDAV account management
     Dav {
         #[clap(subcommand)]
@@ -219,6 +225,9 @@ async fn main() -> Result<()> {
         }
         Commands::Settings { command } => {
             commands::settings::handle_settings_command(&api, command).await?;
+        }
+        Commands::Site { command } => {
+            commands::site::handle_site_command(&api, command).await?;
         }
         Commands::Dav { command } => {
             commands::dav::handle_dav_command(&api, command).await?;

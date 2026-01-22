@@ -1,3 +1,7 @@
+// Utility modules
+pub mod concurrency;
+pub mod glob;
+
 /// Utility functions for CLI display formatting
 /// Format bytes into human-readable size (KB, MB, GB, TB)
 pub fn format_bytes(bytes: i64) -> String {

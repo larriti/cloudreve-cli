@@ -5,6 +5,7 @@ pub mod dav;
 pub mod file;
 pub mod settings;
 pub mod share;
+pub mod site;
 pub mod user;
 pub mod version;
 pub mod workflow;

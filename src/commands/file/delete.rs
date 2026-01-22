@@ -2,6 +2,8 @@ use cloudreve_api::{CloudreveAPI, Result};
 use log::{error, info};
 use std::io::{self, Write};
 
+use crate::utils::glob;
+
 pub async fn handle_delete(
     api: &CloudreveAPI,
     uris: Vec<String>,
@@ -13,33 +15,9 @@ pub async fn handle_delete(
         return Ok(());
     }
 
-    // Parse paths and expand wildcard patterns
-    let mut paths_to_delete: Vec<String> = Vec::new();
-
-    for uri in &uris {
-        if uri.ends_with("/*") {
-            // Wildcard pattern: clear folder contents
-            let base_path = uri.trim_end_matches("/*");
-            let normalized = if base_path.is_empty() { "/" } else { base_path };
-
-            // List all items in the folder
-            match api.list_files(normalized, None, None).await {
-                Ok(file_list) => {
-                    for item in file_list.items() {
-                        let full_path =
-                            format!("{}/{}", normalized.trim_end_matches('/'), item.name);
-                        paths_to_delete.push(full_path);
-                    }
-                }
-                Err(e) => {
-                    error!("Failed to list directory {}: {}", normalized, e);
-                }
-            }
-        } else {
-            // Regular path
-            paths_to_delete.push(uri.clone());
-        }
-    }
+    // Expand wildcard patterns (including /*, *.gz, etc.)
+    // For delete, we include folders to support /* pattern
+    let paths_to_delete = glob::expand_remote_patterns(api, &uris, true).await?;
 
     if paths_to_delete.is_empty() {
         info!("No files to delete");
