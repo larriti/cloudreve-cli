@@ -102,8 +102,12 @@ pub async fn expand_remote_patterns(
                 }
 
                 if glob_pattern.matches(&file.name) {
-                    // 构建完整路径
-                    let full_path = format!("{}{}", dir.trim_end_matches('/'), file.name);
+                    // 构建完整路径：确保目录和文件名之间有 '/'
+                    let full_path = if dir == "/" {
+                        format!("/{}", file.name)
+                    } else {
+                        format!("{}/{}", dir.trim_end_matches('/'), file.name)
+                    };
                     result.push(full_path);
                 }
             }
