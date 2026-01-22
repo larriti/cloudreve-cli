@@ -112,17 +112,13 @@ pub async fn handle_download(
                 .to_string_lossy()
                 .to_string();
 
-            (
-                file_name.clone(),
-                async move {
-                    download_single_file(&api, uri, output, expires_in).await
-                },
-            )
+            (file_name.clone(), async move {
+                download_single_file(&api, uri, output, expires_in).await
+            })
         })
         .collect();
 
-    let results =
-        crate::utils::concurrency::execute_with_concurrency(tasks, concurrency).await;
+    let results = crate::utils::concurrency::execute_with_concurrency(tasks, concurrency).await;
 
     // Statistics
     let mut success = 0;
@@ -141,7 +137,10 @@ pub async fn handle_download(
     }
 
     info!("");
-    info!("Download complete: {} succeeded, {} failed", success, failed);
+    info!(
+        "Download complete: {} succeeded, {} failed",
+        success, failed
+    );
 
     Ok(())
 }

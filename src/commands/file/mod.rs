@@ -284,8 +284,16 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             recursive,
             concurrency,
         } => {
-            upload::handle_upload(client, file, path, overwrite, policy, recursive, concurrency)
-                .await
+            upload::handle_upload(
+                client,
+                file,
+                path,
+                overwrite,
+                policy,
+                recursive,
+                concurrency,
+            )
+            .await
         }
 
         FileCommands::Download {
@@ -294,9 +302,7 @@ pub async fn handle_file_command(client: &CloudreveAPI, command: FileCommands) -
             expires_in,
             concurrency,
             batch,
-        } => {
-            download::handle_download(client, file, output, expires_in, concurrency, batch).await
-        }
+        } => download::handle_download(client, file, output, expires_in, concurrency, batch).await,
 
         FileCommands::Delete {
             path,

@@ -485,7 +485,10 @@ async fn test_file_copy(
     // 验证目录确实存在
     let verify_mkdir = runner.run(&["file", "list", "--path", &test_dir]);
     if !verify_mkdir.success && !verify_mkdir.stderr.contains("Path not exist") {
-        println!("  [File] DEBUG: verify_mkdir stderr = {}", verify_mkdir.stderr);
+        println!(
+            "  [File] DEBUG: verify_mkdir stderr = {}",
+            verify_mkdir.stderr
+        );
     }
 
     let _ = runner.run(&["file", "upload", "--file", &test_file, "--path", "/"]);

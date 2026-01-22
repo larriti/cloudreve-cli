@@ -99,11 +99,7 @@ pub async fn handle_upload(
         ));
     }
 
-    info!(
-        "Starting upload of {} file(s) to {}",
-        all_files.len(),
-        path
-    );
+    info!("Starting upload of {} file(s) to {}", all_files.len(), path);
 
     // 3. Use concurrency control to upload
     let tasks: Vec<_> = all_files
@@ -112,15 +108,15 @@ pub async fn handle_upload(
             let api = api.clone();
             let path = path.clone();
             let policy = policy.clone();
-            let file_name =
-                Path::new(&file_path).file_name().unwrap().to_string_lossy().to_string();
+            let file_name = Path::new(&file_path)
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
 
-            (
-                file_name.clone(),
-                async move {
-                    upload_single_file(&api, file_path, path, overwrite, policy).await
-                },
-            )
+            (file_name.clone(), async move {
+                upload_single_file(&api, file_path, path, overwrite, policy).await
+            })
         })
         .collect();
 

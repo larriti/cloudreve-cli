@@ -53,7 +53,11 @@ pub async fn handle_get(client: &CloudreveClient, key: Option<String>) -> Result
                             activity.created_at,
                             activity.browser,
                             activity.ip,
-                            if activity.success { "success" } else { "failed" }
+                            if activity.success {
+                                "success"
+                            } else {
+                                "failed"
+                            }
                         );
                     }
                 } else {
@@ -71,7 +75,10 @@ pub async fn handle_get(client: &CloudreveClient, key: Option<String>) -> Result
         info!("  Credit: {}", settings.credit);
         info!("  Passwordless: {}", settings.passwordless);
         info!("  2FA Enabled: {}", settings.two_fa_enabled);
-        info!("  Version Retention: {}", settings.version_retention_enabled);
+        info!(
+            "  Version Retention: {}",
+            settings.version_retention_enabled
+        );
         info!("  Disable View Sync: {}", settings.disable_view_sync);
 
         if let Some(expires) = &settings.group_expires {

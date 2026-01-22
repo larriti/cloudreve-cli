@@ -142,7 +142,10 @@ fn display_v3_config(config: &cloudreve_api::api::v3::models::SiteConfig, sectio
                 info!("  App Promotion: {}", config.app_promotion);
             }
             if config.direct_link_batch_size > 0 {
-                info!("  Direct Link Batch Size: {}", config.direct_link_batch_size);
+                info!(
+                    "  Direct Link Batch Size: {}",
+                    config.direct_link_batch_size
+                );
             }
         }
         "login" => {

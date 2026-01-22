@@ -5,7 +5,9 @@ pub mod get;
 
 use cloudreve_api::{CloudreveAPI, Result};
 
-const SECTIONS: &[&str] = &["basic", "login", "explorer", "emojis", "vas", "app", "thumb"];
+const SECTIONS: &[&str] = &[
+    "basic", "login", "explorer", "emojis", "vas", "app", "thumb",
+];
 
 #[derive(clap::Subcommand)]
 pub enum SiteCommands {
